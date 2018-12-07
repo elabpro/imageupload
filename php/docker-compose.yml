@@ -1,0 +1,9 @@
+version: '2'
+
+services:
+    apache:
+        image: pitchanon/docker-apache-php:7.0
+        ports:
+            - 8080:80
+        volumes:
+            - ./src:/var/www/html

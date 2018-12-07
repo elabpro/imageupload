@@ -1,0 +1,13 @@
+{
+    "name": "elab.pro/imageupload",
+    "type": "project",
+    "authors": [
+        {
+            "name": "Eugene Arbatsky",
+            "email": "eugine@elab.pro"
+        }
+    ],
+    "require": {
+        "predis/predis": "^1.1"
+    }
+}

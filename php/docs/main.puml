@@ -1,0 +1,33 @@
+@startuml
+start
+if (Есть незавершенные действия) then (yes)
+   :Удалить все несохраненные изображения;
+   :Завершить создание предпросмотров для изображений;
+endif
+:Запуск сервера с REST API;
+:Настройка маршрутов;
+while (Обработка входящего запроса)
+:Определение типа данных;
+if (Есть файлы) then (yes)
+  while (Есть еще файл?)
+    #HotPink:Обработка файла;
+    #HotPink:Создание превью;
+  endwhile
+elseif (Формат JSON) then (yes)
+  while (Есть еще файл?)
+    #HotPink:Обработка файла;
+    #HotPink:Создание превью;
+  endwhile
+  while (Есть еще URL?)
+    #Green:Загрузка файла;
+    #HotPink:Обработка файла;
+    #HotPink:Создание превью;
+  endwhile
+elseif (URL) then (yes)
+    #Green:Загрузка файла;
+    #HotPink:Обработка файла;
+    #HotPink:Создание превью;
+endif
+endwhile
+stop
+@enduml
