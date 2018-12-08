@@ -9,16 +9,23 @@ require_once 'HttpRequest.php';
 
 use PHPUnit\Framework\TestCase;
 
-class StackTest extends TestCase {
+class ApiTest extends TestCase {
+
+    var $apiURL = "htt://localhost:8080/api/images";
+
+    protected function setUp() {
+        global $apiURL;
+
+        $this->apiURL = $apiURL;
+    }
 
     /**
      * Проверяем загрузку файлов
-     * 
+     *
      * @global type $imagesDir
-     * @global type $apiURL
      */
     public function testGetFile() {
-        global $imagesDir, $apiURL;
+        global $imagesDir;
         $id = 1;
         $filename = $imagesDir . "/" . $id . ".png";
         $testFilename = "data/test.png";
@@ -26,12 +33,12 @@ class StackTest extends TestCase {
         copy($testFilename, $filename);
         $this->assertTrue(file_exists($filename));
         $f = new \REST\File();
-        $result = $f->download($apiURL . "/api/images/" . $id);
+        $result = $f->download($this->apiURL . "/api/images/" . $id);
         // Проверим только по размеру, по содержанию пока проверять не будем
         $this->assertEquals(filesize($result), filesize($filename));
         unlink($imagesDir . "/" . $id . ".png");
         // Проверка загрузки файла
-        $data = exec("curl -s -F \"file1=@" . $testFilename . "\" -F \"file2=@" . $testFilename . "\" -X POST " . $apiURL . "/api/images");
+        $data = exec("curl -s -F \"file1=@" . $testFilename . "\" -F \"file2=@" . $testFilename . "\" -X POST " . $this->apiURL . "/api/images");
         $ids = json_decode($data);
         $this->assertTrue(is_array($ids));
         $this->assertEquals(2, count($ids));
@@ -40,12 +47,11 @@ class StackTest extends TestCase {
 
     /**
      * Проверяем загрузку файлов по JSON
-     * 
+     *
      * @global type $imagesDir
-     * @global type $apiURL
      */
     public function testGetFileJSON() {
-        global $imagesDir, $apiURL;
+        global $imagesDir;
         $id = 1;
         $filename = $imagesDir . "/" . $id . ".png";
         $testFilename = "data/test.png";
@@ -57,8 +63,7 @@ class StackTest extends TestCase {
             array("name" => "file2", "content" => $content)));
         $tmpFilename = tempnam("/tmp", "test");
         file_put_contents($tmpFilename, $jsonData);
-        $data = exec("curl --noproxy localhost -s --header \"Content-Type: application/json\" -d @" . $tmpFilename . " -X POST " . $apiURL . "/api/images");
-        var_dump($data);
+        $data = exec("curl --noproxy localhost -s --header \"Content-Type: application/json\" -d @" . $tmpFilename . " -X POST " . $this->apiURL . "/api/images");
         $ids = json_decode($data);
         $this->assertTrue(is_array($ids));
         $this->assertEquals(2, count($ids));
@@ -68,21 +73,20 @@ class StackTest extends TestCase {
 
     /**
      * Проверяем загрузку по URL
-     * 
+     *
      * @global type $imagesDir
-     * @global type $apiURL
      */
     public function testGetUrl() {
-        global $imagesDir, $apiURL;
+        global $imagesDir;
         $id = 1;
-        $testURL = $apiURL . "/api/images/" . $id;
+        $testURL = $this->apiURL . "/api/images/" . $id;
         $filename = $imagesDir . "/" . $id . ".png";
         $testFilename = "data/test.png";
         // Проверяем скачивание файла
         copy($testFilename, $filename);
 
         // Проверим только по размеру, по содержанию пока проверять не будем
-        $data = exec("curl -s -F \"url=" . $testURL . "\" -X POST " . $apiURL . "/api/images");
+        $data = exec("curl -s -F \"url=" . $testURL . "\" -X POST " . $this->apiURL . "/api/images");
         $ids = json_decode($data);
         $this->assertTrue(is_array($ids));
         $this->assertEquals(1, count($ids));
@@ -91,14 +95,13 @@ class StackTest extends TestCase {
 
     /**
      * Проверяем загрузку по URL в JSON
-     * 
+     *
      * @global type $imagesDir
-     * @global type $apiURL
      */
     public function testGetUrlJSON() {
-        global $imagesDir, $apiURL;
+        global $imagesDir;
         $id = 1;
-        $testURL = $apiURL . "/api/images/" . $id;
+        $testURL = $this->apiURL . "/api/images/" . $id;
         $testFilename = "data/test.png";
         // Проверяем загрузку по JSON
         $content = base64_encode(file_get_contents($testFilename));
@@ -107,7 +110,7 @@ class StackTest extends TestCase {
             array("name" => "file2", "url" => $testURL)));
         $tmpFilename = tempnam("/tmp", "test");
         file_put_contents($tmpFilename, $jsonData);
-        $data = exec("curl --noproxy localhost -s --header \"Content-Type: application/json\" -d @" . $tmpFilename . " -X POST " . $apiURL . "/api/images");
+        $data = exec("curl --noproxy localhost -s --header \"Content-Type: application/json\" -d @" . $tmpFilename . " -X POST " . $this->apiURL . "/api/images");
         $ids = json_decode($data);
         $this->assertTrue(is_array($ids));
         $this->assertEquals(2, count($ids));

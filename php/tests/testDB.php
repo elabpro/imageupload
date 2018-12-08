@@ -7,7 +7,7 @@ require_once '../src/db.php';
 
 use PHPUnit\Framework\TestCase;
 
-class StackTest extends TestCase {
+class DBTest extends TestCase {
 
     public function testConnect() {
         $db = new DB();
