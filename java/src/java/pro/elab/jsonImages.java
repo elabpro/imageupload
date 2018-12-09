@@ -6,12 +6,17 @@
 package pro.elab;
 
 import com.google.gson.Gson;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
@@ -31,8 +36,12 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
+import org.jboss.resteasy.plugins.providers.multipart.InputPart;
+import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
+import org.apache.commons.io.IOUtils;
 
 /**
  * REST Web Service
@@ -64,15 +73,53 @@ public class jsonImages {
         }
     }
 
+//    /**
+//     * POST method for updating or creating an instance of jsonImages
+//     *
+//     * @param content representation for the resource
+//     */
+//    @POST
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    public String postJson(String content) {
+//        return "[" + content.length() + "]";
+//    }
     /**
      * POST method for updating or creating an instance of jsonImages
      *
-     * @param content representation for the resource
+     * @param MultipartFormDataInput
+     * @return
      */
     @POST
-    @Consumes(MediaType.APPLICATION_JSON)
-    public String postJson(String content) {
-        return "[1,2]";
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public Response postJson(MultipartFormDataInput input) {
+        File local;
+        //Get API input data
+        Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
+
+        //The file name
+        String fileName;
+        String pathFileName = "";
+
+        //Get file data to save
+        List<InputPart> inputParts = uploadForm.get("attachment");
+
+        try {
+            for (InputPart inputPart : inputParts) {
+                //Use this header for extra processing if required
+                MultivaluedMap<String, String> header = inputPart.getHeaders();
+                DB db = new DB();
+                fileName = properties.getProperty("imagesDir") + "/" + Integer.toString(db.getCounter()) + ".png";
+                // convert the uploaded file to input stream
+                InputStream inputStream = inputPart.getBody(InputStream.class, null);
+                byte[] bytes = IOUtils.toByteArray(inputStream);
+                // constructs upload file path
+                writeFile(bytes, fileName);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Response.serverError().build();
+        }
+        return Response.status(201).entity(pathFileName).build();
     }
 
     /**
@@ -133,6 +180,22 @@ public class jsonImages {
         response.type("image/png");
         response.header("Content-Disposition", "attachment; filename=\"" + id + ".png\"");
         return response.build();
+
+    }
+
+    private void writeFile(byte[] content, String filename) throws IOException {
+
+        File file = new File(filename);
+
+        if (!file.exists()) {
+            file.createNewFile();
+        }
+
+        FileOutputStream fop = new FileOutputStream(file);
+
+        fop.write(content);
+        fop.flush();
+        fop.close();
 
     }
 }
