@@ -14,7 +14,7 @@
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
                 <library dirs="200">
-                    <file>${file.reference.jedis-3.0.0-SNAPSHOT-javadoc.jar}</file>
+                    <file>${file.reference.gson-2.8.5.jar}</file>
                     <path-in-war>WEB-INF/lib</path-in-war>
                 </library>
             </web-module-libraries>
