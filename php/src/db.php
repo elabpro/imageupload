@@ -6,7 +6,7 @@
 
 namespace REST;
 
-require_once '../src/vendor/autoload.php';
+require_once 'vendor/autoload.php';
 
 \Predis\Autoloader::register();
 
@@ -16,9 +16,10 @@ class DB {
     private $initCounter = 0;
 
     public function __construct() {
+        global $redisHost,$redisPort;
         try {
             if (isset($redisHost) && isset($redisPort)) {
-                $this->redis = new PredisClient(array(
+                $this->redis = new \Predis\Client(array(
                     "scheme" => "tcp",
                     "host" => $redisHost,
                     "port" => $redisPort

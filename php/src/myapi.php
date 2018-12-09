@@ -8,23 +8,30 @@ require_once 'file.php';
 class MyApi extends \REST\Api {
 
     public $apiName = 'images';
-    private $db;
+    private $myF;
 
-    public function setDB($db) {
-        $this->db = $db;
+    public function init() {
+        $this->myF = new \REST\File();
     }
 
     /**
      * Метод GET
      * Вывод списка всех записей
-     * 
-     * @usage http://localhost/api/images 
-     * 
+     *
+     * @usage http://localhost/api/images
+     *
      * @return string
      */
     public function indexAction() {
-
-        if ($images) {
+        global $imagesDir;
+        $images = array();
+        $d = opendir($imagesDir);
+        while ($file = readdir($d)) {
+            if (is_file($imagesDir . "/" . $file)) {
+                $images[] = $file;
+            }
+        }
+        if (count($images) > 0) {
             return $this->response($images, 200);
         }
         return $this->response('Data not found', 404);
@@ -33,9 +40,9 @@ class MyApi extends \REST\Api {
     /**
      * Метод GET
      * Просмотр отдельной записи (по id)
-     * 
-     * @usage http://localhost/api/images/id 
-     * 
+     *
+     * @usage http://localhost/api/images/id
+     *
      * @return string
      */
     public function viewAction() {
@@ -44,7 +51,7 @@ class MyApi extends \REST\Api {
         $id = array_shift($this->requestUri);
 
         if ($id > 0) {
-            $filename = $imagesDir . "/" . $id . ".png";
+            $filename = $this->myF->getFilename($id);
             if (file_exists($filename)) {
                 return $this->responseBinary(file_get_contents($filename), 200);
             }
@@ -58,34 +65,28 @@ class MyApi extends \REST\Api {
      * - multipart/encoded files
      * - JSON {{content=#base64_image_content#|url=#url#}}
      * - url=#url#
-     * 
-     * @usage http://localhost/api/images 
-     * 
+     *
+     * @usage http://localhost/api/images
+     *
      * @return string
      */
     public function createAction() {
-        $myF = new \REST\File();
         $fileIds = array();
         // Обработка файлов
         global $_FILES, $_SERVER;
-        if ($_SERVER["HTTP_CONTENT_TYPE"] == "application/json") {
+        if ((isset($_SERVER["HTTP_CONTENT_TYPE"]) && $_SERVER["HTTP_CONTENT_TYPE"] == "application/json") ||
+                (isset($_SERVER["CONTENT_TYPE"]) && $_SERVER["CONTENT_TYPE"] == "application/json")) {
             $jsonData = file_get_contents("php://input");
             $arr = json_decode($jsonData, TRUE);
             if (is_array($arr)) {
                 foreach ($arr as $f) {
-                    if ($f["content"] != "") {
-                        $fileId = $this->db->getCounter();
-                        file_put_contents($myF->getFilename($fileId), base64_decode($f["content"]));
-                        $fileIds[] = $fileId;
-                        $this->createThumb($fileId);
+                    if (isset($f["content"]) && $f["content"] != "") {
+                        $fileIds[] = $this->myF->saveImageContent($f["content"]);
                     }
-                    if ($f["url"] != "") {
-                        $tmpFilename = $myF->download($f["url"]);
+                    if (isset($f["url"]) && $f["url"] != "") {
+                        $tmpFilename = $this->myF->download($f["url"]);
                         if (file_exists($tmpFilename)) {
-                            $fileId = $this->db->getCounter();
-                            move_uploaded_file($tmpFilename, $myF->getFilename($fileId));
-                            $fileIds[] = $fileId;
-                            $this->createThumb($fileId);
+                            $fileIds[] = $this->myF->saveImageFile($tmpFilename);
                         }
                     }
                 }
@@ -93,19 +94,13 @@ class MyApi extends \REST\Api {
         } else {
             foreach ($_FILES as $f) {
                 if ($f["error"] === 0 && $f["size"] > 0) {
-                    $fileId = $this->db->getCounter();
-                    move_uploaded_file($f["tmp_name"], $myF->getFilename($fileId));
-                    $fileIds[] = $fileId;
-                    $this->createThumb($fileId);
+                    $fileIds[] = $this->myF->saveImageFile($f["tmp_name"]);
                 }
             }
             if (isset($_POST["url"]) && $_POST["url"] != "") {
-                $tmpFilename = $myF->download($_POST["url"]);
+                $tmpFilename = $this->myF->download($_POST["url"]);
                 if (file_exists($tmpFilename)) {
-                    $fileId = $this->db->getCounter();
-                    move_uploaded_file($tmpFilename, $myF->getFilename($fileId));
-                    $fileIds[] = $fileId;
-                    $this->createThumb($fileId);
+                    $fileIds[] = $this->myF->saveImageFile($tmpFilename);
                 }
             }
         }
@@ -120,7 +115,7 @@ class MyApi extends \REST\Api {
      * @return string
      */
     public function updateAction() {
-        
+
     }
 
     /**
@@ -131,19 +126,7 @@ class MyApi extends \REST\Api {
      * @return string
      */
     public function deleteAction() {
-        
-    }
 
-    /**
-     * Создание превью 100x100
-     * 
-     * @param int $id
-     * @return int 1 - успешно
-     */
-    function createThumb($id) {
-        $myF = new \REST\File();
-        exec("convert " . $myF->getFilename($id) . " -resize 100x100\! " . $myF->getThumbFilename($id));
-        return 1;
     }
 
 }

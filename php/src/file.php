@@ -6,7 +6,15 @@
 
 namespace REST;
 
+require_once 'db.php';
+
 class File {
+
+    var $db;
+
+    public function __construct() {
+        $this->db = new \REST\DB();
+    }
 
     /**
      * Скачать файл по ссылке
@@ -34,12 +42,47 @@ class File {
 
     public function getFilename($id) {
         global $imagesDir;
-        return $imagesDir . "/" . $id . ".png";
+        $id += 0;
+        return $imagesDir . "/" . $id;
     }
 
     public function getThumbFilename($id) {
         global $imagesThumbDir;
-        return $imagesThumbDir . "/" . $id . ".png";
+        return $imagesThumbDir . "/" . $id;
+    }
+
+    /**
+     * Запись content в файл
+     *
+     * @param string $content
+     * @return int
+     */
+    public function saveImageContent($content) {
+        $fileId = $this->db->getCounter();
+        $filename = $this->getFilename($fileId);
+        $filenameLock = $filename . ".lock";
+        file_put_contents($filenameLock, "0");
+        file_put_contents($filename, base64_decode($content));
+        unlink($filenameLock);
+        $this->createThumb($fileId);
+        return $fileId;
+    }
+
+    /**
+     * Перенос файла
+     *
+     * @param string $tmpFilename
+     * @return int
+     */
+    public function saveImageFile($tmpFilename) {
+        $fileId = $this->db->getCounter();
+        $filename = $this->getFilename($fileId);
+        $filenameLock = $filename . ".lock";
+        file_put_contents($filenameLock, "0");
+        move_uploaded_file($tmpFilename, $filename);
+        unlink($filenameLock);
+        $this->createThumb($fileId);
+        return $fileId;
     }
 
     /**
@@ -47,6 +90,20 @@ class File {
      */
     private function valid($url) {
         return true;
+    }
+
+    /**
+     * Создание превью 100x100
+     *
+     * @param int $id
+     * @return int 1 - успешно
+     */
+    function createThumb($id) {
+        $filenameLock = $this->getThumbFilename($id) . ".lock";
+        file_put_contents($filenameLock, "0");
+        exec("convert " . $this->getFilename($id) . " -resize 100x100\! " . $this->getThumbFilename($id));
+        unlink($filenameLock);
+        return 1;
     }
 
 }

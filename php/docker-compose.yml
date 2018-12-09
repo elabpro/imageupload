@@ -1,9 +1,18 @@
 version: '2'
 
 services:
-    apache:
-        image: pitchanon/docker-apache-php:7.0
+    apache-web:
+        build: 
+            context: .
+            dockerfile: Dockerfile
+        container_name: apache-web
+#        image: thecodingmachine/php:7.2-v2-apache-node8
         ports:
             - 8080:80
         volumes:
+            - ./:/var/www
             - ./src:/var/www/html
+    redis:
+        image: redis
+        command: ["sh", "-c", "exec redis-server"]
+

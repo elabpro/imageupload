@@ -10,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 class DBTest extends TestCase {
 
     public function testConnect() {
-        $db = new DB();
+        $db = new \REST\DB();
         $db->setCounter(0);
         $this->assertEquals(1, $db->getCounter());
         $this->assertEquals(2, $db->getCounter());

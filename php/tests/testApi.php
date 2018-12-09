@@ -26,23 +26,18 @@ class ApiTest extends TestCase {
      */
     public function testGetFile() {
         global $imagesDir;
-        $id = 1;
-        $filename = $imagesDir . "/" . $id . ".png";
         $testFilename = "data/test.png";
-        // Проверяем скачивание файла
-        copy($testFilename, $filename);
-        $this->assertTrue(file_exists($filename));
-        $f = new \REST\File();
-        $result = $f->download($this->apiURL . "/api/images/" . $id);
-        // Проверим только по размеру, по содержанию пока проверять не будем
-        $this->assertEquals(filesize($result), filesize($filename));
-        unlink($imagesDir . "/" . $id . ".png");
         // Проверка загрузки файла
         $data = exec("curl -s -F \"file1=@" . $testFilename . "\" -F \"file2=@" . $testFilename . "\" -X POST " . $this->apiURL . "/api/images");
         $ids = json_decode($data);
         $this->assertTrue(is_array($ids));
         $this->assertEquals(2, count($ids));
         $this->assertGreaterThan(0, $ids[0]);
+        // Проверяем скачивание файла
+        $f = new \REST\File();
+        $result = $f->download($this->apiURL . "/api/images/" . $ids[0]);
+        // Проверим только по размеру, по содержанию пока проверять не будем
+        $this->assertEquals(filesize($result), filesize($testFilename));
     }
 
     /**
@@ -50,10 +45,7 @@ class ApiTest extends TestCase {
      *
      * @global type $imagesDir
      */
-    public function testGetFileJSON() {
-        global $imagesDir;
-        $id = 1;
-        $filename = $imagesDir . "/" . $id . ".png";
+    public function testGetJSONFile() {
         $testFilename = "data/test.png";
 
         // Проверяем загрузку по JSON
@@ -80,7 +72,7 @@ class ApiTest extends TestCase {
         global $imagesDir;
         $id = 1;
         $testURL = $this->apiURL . "/api/images/" . $id;
-        $filename = $imagesDir . "/" . $id . ".png";
+        $filename = $imagesDir . "/" . $id;
         $testFilename = "data/test.png";
         // Проверяем скачивание файла
         copy($testFilename, $filename);
@@ -98,7 +90,7 @@ class ApiTest extends TestCase {
      *
      * @global type $imagesDir
      */
-    public function testGetUrlJSON() {
+    public function testGetJSONUrl() {
         global $imagesDir;
         $id = 1;
         $testURL = $this->apiURL . "/api/images/" . $id;
