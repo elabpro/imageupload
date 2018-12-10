@@ -9,5 +9,5 @@
 $imagesDir = "../images.full";
 $imagesThumbDir = "../images.thumb";
 $apiURL = "http://localhost:8080";
-//$redisHost = "127.0.0.1";
-//$redisPort = 1234;
+$redisHost = "redis";
+$redisPort = 6379;

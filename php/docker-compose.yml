@@ -6,7 +6,6 @@ services:
             context: .
             dockerfile: Dockerfile
         container_name: apache-web
-#        image: thecodingmachine/php:7.2-v2-apache-node8
         ports:
             - 8080:80
         volumes:
