@@ -12,17 +12,19 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
 	Redis struct {
 		Host string `json:"host"`
 	} `json:"database"`
-	Host          string `json:"host"`
-	Port          string `json:"port"`
-	ImagesDir     string `json:"imagesDir"`
-	ImagesThumDir string `json:"imagesTumbDir"`
+	Host           string `json:"host"`
+	Port           string `json:"port"`
+	ImagesDir      string `json:"imagesDir"`
+	ImagesThumbDir string `json:"imagesThumbDir"`
 }
 
 type FileRecord struct {
@@ -74,7 +76,7 @@ func getImages(w http.ResponseWriter, r *http.Request) {
  * @usage http://localhost:8080/api/images/{id}
  */
 func getImage(w http.ResponseWriter, r *http.Request) {
-	Filename := config.ImagesDir + "/1.png"
+	Filename := config.ImagesDir + "/1"
 	//Check if file exists and open
 	Openfile, err := os.Open(Filename)
 	defer Openfile.Close() //Close after function return
@@ -97,7 +99,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	//Get the file size
 	FileStat, _ := Openfile.Stat()                     //Get info from file
 	FileSize := strconv.FormatInt(FileStat.Size(), 10) //Get file size as a string
-	w.Header().Set("Content-Disposition", "attachment; filename=1.png")
+	w.Header().Set("Content-Disposition", "attachment; filename=1")
 	w.Header().Set("Content-Type", FileContentType)
 	w.Header().Set("Content-Length", FileSize)
 	//Send the file
@@ -120,22 +122,9 @@ func createImages(w http.ResponseWriter, r *http.Request) {
 		} else {
 			for _, file := range uploadRequest {
 				if file.Content != "" {
-					fileId, err := DBconnection.Incr("counter").Result()
-					if err != nil {
-						panic(err)
-					}
-					dst, err := os.Create(config.ImagesDir + "/" + strconv.FormatInt(fileId, 10) + ".png")
-					defer dst.Close()
+					fileId, err := saveImageContent(file.Content)
 					if err != nil {
 						http.Error(w, err.Error(), http.StatusInternalServerError)
-						return
-					}
-					decoded, err := base64.StdEncoding.DecodeString(file.Content)
-					if err != nil {
-						fmt.Println("decode error:", err)
-						return
-					} else {
-						dst.Write(decoded)
 					}
 					images = append(images, strconv.FormatInt(fileId, 10))
 					fmt.Println("Writing file " + strconv.FormatInt(fileId, 10))
@@ -145,11 +134,12 @@ func createImages(w http.ResponseWriter, r *http.Request) {
 					if err != nil {
 						panic(err)
 					}
-					dstFilename := config.ImagesDir + "/" + strconv.FormatInt(fileId, 10) + ".png"
+					dstFilename := config.ImagesDir + "/" + strconv.FormatInt(fileId, 10)
 					err = DownloadFile(dstFilename, file.URL)
 					if err != nil {
 						panic(err)
 					} else {
+						createThumb(strconv.FormatInt(fileId, 10))
 						images = append(images, strconv.FormatInt(fileId, 10))
 						fmt.Println("Writing url to file " + dstFilename)
 					}
@@ -168,7 +158,7 @@ func createImages(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					panic(err)
 				}
-				dstFilename := config.ImagesDir + "/" + strconv.FormatInt(fileId, 10) + ".png"
+				dstFilename := config.ImagesDir + "/" + strconv.FormatInt(fileId, 10)
 				dst, err := os.Create(dstFilename)
 				defer dst.Close()
 				if err != nil {
@@ -179,6 +169,7 @@ func createImages(w http.ResponseWriter, r *http.Request) {
 					http.Error(w, err.Error(), http.StatusInternalServerError)
 					return
 				}
+				createThumb(strconv.FormatInt(fileId, 10))
 				images = append(images, strconv.FormatInt(fileId, 10))
 				fmt.Println("Writing mp file " + dstFilename)
 			}
@@ -189,8 +180,9 @@ func createImages(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					panic(err)
 				}
-				dstFilename := config.ImagesDir + "/" + strconv.FormatInt(fileId, 10) + ".png"
+				dstFilename := config.ImagesDir + "/" + strconv.FormatInt(fileId, 10)
 				err = DownloadFile(dstFilename, buf.String())
+				createThumb(strconv.FormatInt(fileId, 10))
 				if err != nil {
 					panic(err)
 				} else {
@@ -221,6 +213,8 @@ func DBConnect(host string) {
 
 func DownloadFile(filepath string, url string) error {
 
+	lock, err := os.Create(filepath + ".lock")
+	lock.Close()
 	// Create the file
 	out, err := os.Create(filepath)
 	if err != nil {
@@ -240,13 +234,96 @@ func DownloadFile(filepath string, url string) error {
 	if err != nil {
 		return err
 	}
-
+	os.Remove(filepath + ".lock")
 	return nil
+}
+
+func saveImageContent(content string) (int64, error) {
+	fileId, err := DBconnection.Incr("counter").Result()
+	if err != nil {
+		panic(err)
+	}
+	filename := config.ImagesDir + "/" + strconv.FormatInt(fileId, 10)
+	lock, err := os.Create(filename + ".lock")
+	lock.Close()
+	dst, err := os.Create(filename)
+	defer dst.Close()
+	if err != nil {
+		return 0, err
+	}
+	decoded, err := base64.StdEncoding.DecodeString(content)
+	if err != nil {
+		return 0, err
+	} else {
+		dst.Write(decoded)
+	}
+	os.Remove(filename + ".lock")
+	createThumb(strconv.FormatInt(fileId, 10))
+
+	return fileId, nil
+}
+
+func createThumb(fileId string) {
+	imageName := config.ImagesDir + "/" + fileId
+	filename := config.ImagesThumbDir + "/" + fileId
+	lock, _ := os.Create(filename + ".lock")
+	cmd := exec.Command("sh", "-c", "convert "+imageName+" -resize 100x100\\! "+filename)
+	cmd.Run()
+	lock.Close()
+	os.Remove(filename + ".lock")
+
+}
+
+func check() {
+	var maxId int64
+	maxId = 0
+	fmt.Println("Checking images")
+	// Cleaning failed images
+	images, err := ioutil.ReadDir(config.ImagesDir)
+	if err != nil {
+		return
+	}
+	for _, file := range images {
+		if !file.IsDir() {
+			if (strings.Contains(file.Name(), "lock")) {
+				filename := config.ImagesDir + "/" + file.Name()[:len(file.Name())-5]
+				fmt.Println("Removing " + filename)
+				err = os.Remove(filename)
+				err = os.Remove(filename + ".lock")
+			}else{
+				id,_ := strconv.ParseInt(file.Name(),10, 64)
+				if id > maxId{
+					maxId = id
+				}
+			}
+		}
+	}
+	images, err = ioutil.ReadDir(config.ImagesThumbDir)
+	if err != nil {
+		return
+	}
+	for _, file := range images {
+		if !file.IsDir() {
+			if (strings.Contains(file.Name(), "lock")) {
+				fileId := file.Name()[:len(file.Name())-5]
+				filename := config.ImagesThumbDir + "/" + fileId
+				fmt.Println("Removing " + filename)
+				err = os.Remove(filename)
+
+			}
+		}
+	}
+	if maxId > 0 {
+		fmt.Print("Setting counter to ")
+		fmt.Println(maxId)
+		DBconnection.Set("counter",maxId, 0)
+	}
 }
 
 func main() {
 	config = LoadConfiguration("config.json")
 	DBConnect(config.Redis.Host)
+	check()
 	fmt.Println("API will be available at http://" + config.Host + ":" + config.Port + "/api/images")
 	r := mux.NewRouter()
 	r.HandleFunc("/api/images", getImages).Methods("GET")

@@ -1,8 +1,8 @@
 {
   "database": {
-    "host": "localhost"
+    "host": "redis"
   },
-  "host": "localhost",
+  "host": "0.0.0.0",
   "port": "8080",
   "imagesDir": "../images.full",
   "imagesThumbDir": "../images.thumb"

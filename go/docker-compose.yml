@@ -1,5 +1,30 @@
 version: "2"
 
 services:
-  app:
-    image: golang:1.6.1-alpine
+    redis:
+        image: redis
+        command: ["sh", "-c", "exec redis-server"]
+        networks:
+            - backend
+    app:
+        build: 
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - redis
+        ports:
+            - 8080:8080
+        networks:
+            - backend
+            - frontend
+#        extra_hosts:
+#            - "outside:docker.for.lin.host.internal"
+        volumes:
+            - ./:/mnt
+        command: ["sh","-c","cd /mnt/src && make docker"]
+
+networks:
+  frontend:
+    driver: "bridge"
+  backend:
+
