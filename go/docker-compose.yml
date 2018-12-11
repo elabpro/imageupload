@@ -13,7 +13,7 @@ services:
         depends_on:
             - redis
         ports:
-            - 8080:8080
+            - 8080:8000
         networks:
             - backend
             - frontend
@@ -21,7 +21,7 @@ services:
 #            - "outside:docker.for.lin.host.internal"
         volumes:
             - ./:/mnt
-        command: ["sh","-c","cd /mnt/src && make docker"]
+        command: ["sh","-c","unset http_proxy && cd /mnt/src && make docker"]
 
 networks:
   frontend:

@@ -33,13 +33,13 @@ type FileRecord struct {
 	URL     string `json:url`
 }
 
-//type JSONRequest struct {
-//	Files []FileRecord
-//}
-
 var config Config
 var DBconnection *redis.Client
 
+/**
+ * Load settings
+ * @param file file with settings (JSON)
+ */
 func LoadConfiguration(file string) (Config) {
 	var conf Config
 	configFile, err := os.Open(file)
@@ -53,7 +53,9 @@ func LoadConfiguration(file string) (Config) {
 }
 
 /**
+ * Method GET
  * Getting array of images (JSON)
+ *
  * @usage http://localhost:8080/api/images
  */
 func getImages(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +74,9 @@ func getImages(w http.ResponseWriter, r *http.Request) {
 }
 
 /**
+ * Method GET
  * Getting an image
+ *
  * @usage http://localhost:8080/api/images/{id}
  */
 func getImage(w http.ResponseWriter, r *http.Request) {
@@ -107,6 +111,18 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	Openfile.Seek(0, 0)
 	io.Copy(w, Openfile) //'Copy' the file to the client
 }
+
+/**
+ * Method POST
+ * Upload images in PNG. POST body can contain:
+ * - multipart/encoded files
+ * - JSON {{content=#base64_image_content#|url=#url#}}
+ * - url=#url#
+ *
+ * @usage http://localhost/api/images
+ *
+ * @return string
+ */
 
 func createImages(w http.ResponseWriter, r *http.Request) {
 	var images []string
@@ -197,6 +213,9 @@ func createImages(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(response))
 }
 
+/**
+ * Connect to Redis DB
+ */
 func DBConnect(host string) {
 	DBconnection = redis.NewClient(&redis.Options{
 		Addr:     host + ":6379",
@@ -211,8 +230,13 @@ func DBConnect(host string) {
 	}
 }
 
+/**
+ * Download file from URL
+ * @param filepath
+ * @param url
+ */
 func DownloadFile(filepath string, url string) error {
-
+	fmt.Println("Trying to download url " + url)
 	lock, err := os.Create(filepath + ".lock")
 	lock.Close()
 	// Create the file
@@ -238,6 +262,10 @@ func DownloadFile(filepath string, url string) error {
 	return nil
 }
 
+/**
+ * Save base64 content in to the file
+ * @param content
+ */
 func saveImageContent(content string) (int64, error) {
 	fileId, err := DBconnection.Incr("counter").Result()
 	if err != nil {
@@ -263,6 +291,10 @@ func saveImageContent(content string) (int64, error) {
 	return fileId, nil
 }
 
+/**
+ * Create a thumb 100x100
+ * @param fileId
+ */
 func createThumb(fileId string) {
 	imageName := config.ImagesDir + "/" + fileId
 	filename := config.ImagesThumbDir + "/" + fileId
@@ -274,14 +306,17 @@ func createThumb(fileId string) {
 
 }
 
-func check() {
+/**
+ * Check for failed images
+ */
+func check() (int64) {
 	var maxId int64
 	maxId = 0
-	fmt.Println("Checking images")
+	fmt.Println("Checking images in " + config.ImagesDir)
 	// Cleaning failed images
 	images, err := ioutil.ReadDir(config.ImagesDir)
 	if err != nil {
-		return
+		return 0
 	}
 	for _, file := range images {
 		if !file.IsDir() {
@@ -290,9 +325,9 @@ func check() {
 				fmt.Println("Removing " + filename)
 				err = os.Remove(filename)
 				err = os.Remove(filename + ".lock")
-			}else{
-				id,_ := strconv.ParseInt(file.Name(),10, 64)
-				if id > maxId{
+			} else {
+				id, _ := strconv.ParseInt(file.Name(), 10, 64)
+				if id > maxId {
 					maxId = id
 				}
 			}
@@ -300,7 +335,7 @@ func check() {
 	}
 	images, err = ioutil.ReadDir(config.ImagesThumbDir)
 	if err != nil {
-		return
+		return 0
 	}
 	for _, file := range images {
 		if !file.IsDir() {
@@ -316,18 +351,24 @@ func check() {
 	if maxId > 0 {
 		fmt.Print("Setting counter to ")
 		fmt.Println(maxId)
-		DBconnection.Set("counter",maxId, 0)
+		if DBconnection != nil {
+			DBconnection.Set("counter", maxId, 0)
+		}
 	}
+	return maxId
 }
 
 func main() {
 	config = LoadConfiguration("config.json")
 	DBConnect(config.Redis.Host)
 	check()
-	fmt.Println("API will be available at http://" + config.Host + ":" + config.Port + "/api/images")
+	fmt.Println("API will be available at http://" + config.Host + ":8080/api/images")
 	r := mux.NewRouter()
 	r.HandleFunc("/api/images", getImages).Methods("GET")
 	r.HandleFunc("/api/images/{id}", getImage).Methods("GET")
 	r.HandleFunc("/api/images", createImages).Methods("POST")
+	go func() {
+		log.Fatal(http.ListenAndServe(":8080", r))
+	}()
 	log.Fatal(http.ListenAndServe(config.Host+":"+config.Port, r))
 }
