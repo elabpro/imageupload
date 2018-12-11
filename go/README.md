@@ -1,4 +1,4 @@
-# Simple image upload API (on PHP)
+# Simple image upload API (on Goland)
 
 ## How to run
 
