@@ -1,17 +1,19 @@
 version: '2'
 
 services:
+    redis:
+        image: redis
+        command: ["sh", "-c", "exec redis-server"]
     apache-web:
         build: 
             context: .
             dockerfile: Dockerfile
         container_name: apache-web
+        depends_on:
+            - redis
         ports:
             - 8080:80
         volumes:
             - ./:/var/www
             - ./src:/var/www/html
-    redis:
-        image: redis
-        command: ["sh", "-c", "exec redis-server"]
-
+        command: ["sh","-c", "sudo service apache2 restart && curl -s -X GET http://localhost:8080/check.php && tail -F /dev/null"]

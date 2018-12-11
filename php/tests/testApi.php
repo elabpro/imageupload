@@ -7,7 +7,7 @@ require_once '../include/config.php';
 require_once '../src/file.php';
 require_once 'HttpRequest.php';
 
-use PHPUnit\Framework\TestCase;
+use \PHPUnit\Framework\TestCase;
 
 class ApiTest extends TestCase {
 

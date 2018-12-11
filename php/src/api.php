@@ -29,7 +29,7 @@ abstract class Api {
             } else if ($_SERVER['HTTP_X_HTTP_METHOD'] == 'PUT') {
                 $this->method = 'PUT';
             } else {
-                throw new Exception("Unexpected Header");
+                throw new \Exception("Unexpected Header");
             }
         }
     }
@@ -37,7 +37,7 @@ abstract class Api {
     public function run() {
         //Первые 2 элемента массива URI должны быть "api" и название объекта
         if (array_shift($this->requestUri) !== 'api' || array_shift($this->requestUri) !== $this->apiName) {
-            throw new RuntimeException('API Not Found', 404);
+            throw new \RuntimeException('API Not Found', 404);
         }
         //Определение действия для обработки
         $this->action = $this->getAction();
@@ -46,7 +46,7 @@ abstract class Api {
         if (method_exists($this, $this->action)) {
             return $this->{$this->action}();
         } else {
-            throw new RuntimeException('Invalid Method', 405);
+            throw new \RuntimeException('Invalid Method', 405);
         }
     }
 

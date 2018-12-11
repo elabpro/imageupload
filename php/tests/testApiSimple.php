@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 class ApiSimpleTest extends TestCase {
 
-    var $apiURL = "htt://localhost:8080";
+    var $apiURL = "http://localhost:8080";
 
     protected function setUp() {
         global $apiURL;
