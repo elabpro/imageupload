@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
+import javax.annotation.PostConstruct;
 import javax.servlet.ServletContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
@@ -61,13 +62,11 @@ public class jsonImages {
      * Creates a new instance of jsonImages
      */
     public jsonImages() {
-        loadProperties();
     }
 
     private void loadProperties() {
         try {
-            String realPath = sContext.getRealPath("/WEB-INF/imageupload.properties");
-            properties.load(new FileReader(new File(realPath)));
+            properties.load(sContext.getResourceAsStream("/WEB-INF/imageupload.properties"));
         } catch (Exception ex) {
             Logger.getLogger(jsonImages.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -96,6 +95,10 @@ public class jsonImages {
         //Get API input data
         Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
 
+        if (properties.isEmpty()) {
+            loadProperties();
+        }
+
         //The file name
         String fileName;
         String pathFileName = "";
@@ -107,13 +110,11 @@ public class jsonImages {
             for (InputPart inputPart : inputParts) {
                 //Use this header for extra processing if required
                 MultivaluedMap<String, String> header = inputPart.getHeaders();
-                DB db = new DB();
-                fileName = properties.getProperty("imagesDir") + "/" + Integer.toString(db.getCounter()) + ".png";
                 // convert the uploaded file to input stream
                 InputStream inputStream = inputPart.getBody(InputStream.class, null);
                 byte[] bytes = IOUtils.toByteArray(inputStream);
                 // constructs upload file path
-                writeFile(bytes, fileName);
+                new ImageFile(properties).saveFile(bytes);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -123,7 +124,9 @@ public class jsonImages {
     }
 
     /**
-     * Retrieves representation of an instance of pro.elab.jsonImages
+     * Method GET Getting array of images (JSON)
+     *
+     * @usage http://localhost:8080/api/images
      *
      * @return an instance of java.lang.String
      */
@@ -153,7 +156,9 @@ public class jsonImages {
     }
 
     /**
-     * Retrieves representation of an instance of pro.elab.jsonImages
+     * Method GET Getting an image
+     *
+     * @usage http://localhost:8080/api/images/{id}
      *
      * @param id
      * @return an instance of java.lang.String
@@ -170,7 +175,7 @@ public class jsonImages {
         String fullPath = sContext.getRealPath("/") + properties.getProperty("imagesDir");
 
         // We need specific image
-        File image = new File(fullPath + "/" + id + ".png");
+        File image = new File(fullPath + "/" + id);
         String result;
         if (!image.exists()) {
             ResponseBuilder response = Response.status(404);
@@ -183,19 +188,4 @@ public class jsonImages {
 
     }
 
-    private void writeFile(byte[] content, String filename) throws IOException {
-
-        File file = new File(filename);
-
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-
-        FileOutputStream fop = new FileOutputStream(file);
-
-        fop.write(content);
-        fop.flush();
-        fop.close();
-
-    }
 }

@@ -1,4 +1,4 @@
-# Simple image upload API (on Goland)
+# Simple image upload API (on Golang)
 
 ## How to run
 

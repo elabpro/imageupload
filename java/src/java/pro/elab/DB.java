@@ -15,8 +15,8 @@ public class DB {
 
     Jedis redis;
 
-    DB() {
-        redis = new Jedis("localhost");
+    DB(String host) {
+        redis = new Jedis(host);
     }
 
     public int setCounter(int v) {
