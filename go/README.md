@@ -2,7 +2,7 @@
 
 ## How to run
 
-docker-composer run --build
+./prepare.sh && docker-composer run --build
 
 API will be available at http://localhost:8080/api/images
 
