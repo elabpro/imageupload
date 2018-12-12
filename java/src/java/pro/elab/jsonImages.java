@@ -78,7 +78,7 @@ public class jsonImages {
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     public String postJson(String content) {
-        Logger.getLogger(jsonImages.class.getName()).log(Level.INFO, null, "POST JSON");
+        Logger.getLogger(jsonImages.class.getName()).log(Level.INFO, "POST JSON");
         if (properties.isEmpty()) {
             loadProperties();
         }
@@ -119,7 +119,7 @@ public class jsonImages {
             loadProperties();
         }
         if (ServletFileUpload.isMultipartContent(request)) {
-            Logger.getLogger(jsonImages.class.getName()).log(Level.INFO, null, "POST MP");
+            Logger.getLogger(jsonImages.class.getName()).log(Level.INFO, "POST MP");
             FileItemFactory factory = new DiskFileItemFactory();
             ServletFileUpload fileUpload = new ServletFileUpload(factory);
             try {
@@ -130,12 +130,17 @@ public class jsonImages {
                      * Return true if the instance represents a simple form
                      * field. Return false if it represents an uploaded file.
                      */
+                    int fileId = 0;
                     while (iter.hasNext()) {
                         final FileItem item = iter.next();
                         final String itemName = item.getName();
                         final String fieldName = item.getFieldName();
-                        final String fieldValue = item.getString();
-                        int fileId = new ImageFile(properties).saveFile(item.getInputStream());
+                        if (fieldName.equals("url")) {
+                            final String fieldValue = item.getString();
+                            fileId = new ImageFile(properties).download(fieldValue);
+                        } else {
+                            fileId = new ImageFile(properties).saveFile(item.getInputStream());
+                        }
                         images.add(String.valueOf(fileId));
                     }
                 }

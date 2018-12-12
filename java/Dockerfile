@@ -7,6 +7,7 @@ FROM glassfish:latest
 RUN apt-get -y update
 RUN apt-get -y install make git curl net-tools imagemagick
 
+RUN echo "Deploy application"
 COPY dist/ImageUpload_-_Java.war /root
 RUN asadmin start-domain && asadmin deploy /root/ImageUpload_-_Java.war && asadmin create-http-listener --listeneraddress 0.0.0.0 --listenerport 8000 --defaultvs server externalListener
 

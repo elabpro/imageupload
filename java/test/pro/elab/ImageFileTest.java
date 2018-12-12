@@ -6,6 +6,8 @@
 package pro.elab;
 
 import java.io.InputStream;
+import java.util.Base64;
+import java.util.Properties;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -14,8 +16,17 @@ import static org.junit.Assert.*;
  * @author eugine
  */
 public class ImageFileTest {
+
+        ImageFile instance;
     
     public ImageFileTest() {
+        Properties p;
+        p = new Properties();
+        p.setProperty("imagesDir", "/tmp");
+        p.setProperty("imagesThumbDir", "/tmp");
+        p.setProperty("redisHost", "localhost");
+        p.setProperty("path","");
+        instance = new ImageFile(p);
     }
 
     /**
@@ -24,11 +35,10 @@ public class ImageFileTest {
     @Test
     public void testSaveContent() {
         System.out.println("saveContent");
-        String content = "";
-        ImageFile instance = null;
+        String content = Base64.getEncoder().encodeToString("Test".getBytes());
         int expResult = 0;
-//        int result = instance.saveContent(content);
-//        assertEquals(expResult, result);
+        int result = instance.saveContent(content);
+        assertTrue(expResult < result);
     }
 
     /**
@@ -63,11 +73,10 @@ public class ImageFileTest {
     @Test
     public void testCreateThumb() {
         System.out.println("createThumb");
-        int fileId = 0;
-        ImageFile instance = null;
-        int expResult = 0;
-//        int result = instance.createThumb(fileId);
-//        assertEquals(expResult, result);
+        int fileId = 1;
+        int expResult = 1;
+        int result = instance.createThumb(fileId);
+        assertEquals(expResult, result);
     }
     
 }
