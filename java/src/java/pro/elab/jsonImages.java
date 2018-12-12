@@ -34,7 +34,6 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemFactory;
-import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
@@ -71,10 +70,10 @@ public class jsonImages {
      * Method POST Upload images in PNG. POST body: - JSON
      * {{content=#base64_image_content#|url=#url#}}
      *
-     * @usage http://localhost/api/images
+     * \@usage http://localhost/api/images
      *
      * @param content representation for the resource
-     * @return JSON array of filename
+     * @return JSON array of filenames
      */
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -105,15 +104,17 @@ public class jsonImages {
      * Method POST Upload images in PNG. POST body: - multipart/encoded files -
      * url=#url#
      *
-     * @usage http://localhost/api/images
+     * \@usage http://localhost/api/images
      *
-     * @param request
-     * @return
+     * @param request HTTP Request
+     * @return JSON array of filenames
      */
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response postMP(@Context HttpServletRequest request) {
-        int status = 200;
+    @Produces(MediaType.APPLICATION_JSON)
+    public String postMP(@Context HttpServletRequest request) {
+        List<String> images = new ArrayList<String>();
+        Gson gson = new Gson();
         if (properties.isEmpty()) {
             loadProperties();
         }
@@ -134,26 +135,23 @@ public class jsonImages {
                         final String itemName = item.getName();
                         final String fieldName = item.getFieldName();
                         final String fieldValue = item.getString();
-                        new ImageFile(properties).saveFile(item.getInputStream());
+                        int fileId = new ImageFile(properties).saveFile(item.getInputStream());
+                        images.add(String.valueOf(fileId));
                     }
                 }
-            } catch (FileUploadException e) {
-                status = 404;
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace();
-                status = 404;
+            } catch (Exception ex) {
+                Logger.getLogger(jsonImages.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        return Response.status(status).build();
+        return gson.toJson(images).toString();
     }
 
     /**
      * Method GET Getting array of images (JSON)
      *
-     * @usage http://localhost:8080/api/images
+     * \@usage http://localhost:8080/api/images
      *
-     * @return an instance of java.lang.String
+     * @return JSON array of filenames
      */
     @GET
     @Produces(MediaType.APPLICATION_JSON)
@@ -183,14 +181,13 @@ public class jsonImages {
     /**
      * Method GET Getting an image
      *
-     * @usage http://localhost:8080/api/images/{id}
+     * \@usage http://localhost:8080/api/images/{id}
      *
-     * @param id
-     * @return an instance of java.lang.String
+     * @param id file's id
+     * @return binary image
      */
     @GET
     @Path("/{id}")
-    @Produces(MediaType.APPLICATION_JSON)
     public Response getJson(@PathParam("id") int id) {
         if (properties.isEmpty()) {
             loadProperties();

@@ -14,12 +14,14 @@ services:
             - redis
         ports:
             - 8080:8000
+#            - 4848:4848
         networks:
             - backend
             - frontend
         volumes:
             - ./:/mnt
-#        command: ["sh","-c","unset http_proxy && cd /mnt/src && make docker"]
+            - ./images.full:/usr/local/glassfish4/glassfish/domains/domain1/applications/ImageUpload_-_Java/images.full
+            - ./images.thumb:/usr/local/glassfish4/glassfish/domains/domain1/applications/ImageUpload_-_Java/images.thumb
 
 networks:
   frontend:

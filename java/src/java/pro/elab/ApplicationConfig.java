@@ -41,14 +41,13 @@ public class ApplicationConfig extends Application {
     @PostConstruct
     public void init() {
         Properties properties = new Properties();
-        System.out.println("Initializing servlet");
         try {
             properties.load(sContext.getResourceAsStream("/WEB-INF/imageupload.properties"));
         } catch (Exception ex) {
             Logger.getLogger(jsonImages.class.getName()).log(Level.SEVERE, null, ex);
         }
         int maxId = 0;
-        System.out.println("Checking images in " + properties.getProperty("imagesDir"));
+        Logger.getLogger(ApplicationConfig.class.getName()).log(Level.INFO, null, "Checking images in " + properties.getProperty("imagesDir"));
         String fullPath = sContext.getRealPath("/") + properties.getProperty("imagesDir");
         // List of images
         try {
@@ -59,13 +58,13 @@ public class ApplicationConfig extends Application {
                         String fileImage = filePath.toString().substring(0, filePath.toString().indexOf(".lock"));
                         File fI = new File(fileImage);
                         try {
-                            System.out.println("Removing " + fileImage);
+                            Logger.getLogger(ApplicationConfig.class.getName()).log(Level.INFO, null, "Removing " + fileImage);
                             fI.delete();
                         } catch (Exception ex) {
                             //
                         }
                         try {
-                            System.out.println("Removing " + filePath);
+                            Logger.getLogger(ApplicationConfig.class.getName()).log(Level.INFO, null, "Removing " + filePath);
                             filePath.toFile().delete();
                         } catch (Exception ex) {
                             //
@@ -74,10 +73,10 @@ public class ApplicationConfig extends Application {
                 }
             });
         } catch (Exception ex) {
-            Logger.getLogger(jsonImages.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ApplicationConfig.class.getName()).log(Level.SEVERE, null, ex);
         }
         // List of thumbs
-        System.out.println("Checking images in " + properties.getProperty("imagesThumbDir"));
+        Logger.getLogger(ApplicationConfig.class.getName()).log(Level.INFO, null, "Checking images in " + properties.getProperty("imagesThumbDir"));
         fullPath = sContext.getRealPath("/") + properties.getProperty("imagesThumbDir");
         try {
             Stream<java.nio.file.Path> filePathStream = Files.walk(Paths.get(fullPath));
@@ -87,14 +86,14 @@ public class ApplicationConfig extends Application {
                         String fileImage = filePath.toString().substring(0, filePath.toString().indexOf(".lock"));
                         File fI = new File(fileImage);
                         try {
-                            System.out.println("Removing " + fileImage);
+                            Logger.getLogger(ApplicationConfig.class.getName()).log(Level.INFO, null, "Removing " + fileImage);
                             fI.delete();
                         } catch (Exception ex) {
                             //
                         }
                         try {
                             if (filePath.toFile().exists()) {
-                                System.out.println("Removing " + filePath);
+                                Logger.getLogger(ApplicationConfig.class.getName()).log(Level.INFO, null, "Removing " + filePath);
                                 filePath.toFile().delete();
                             }
                         } catch (Exception ex) {
@@ -104,7 +103,7 @@ public class ApplicationConfig extends Application {
                 }
             });
         } catch (Exception ex) {
-            Logger.getLogger(jsonImages.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ApplicationConfig.class.getName()).log(Level.SEVERE, null, ex);
         }
         if (maxId > 0) {
         }

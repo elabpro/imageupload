@@ -14,8 +14,6 @@ import java.util.Base64;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.servlet.ServletContext;
-import javax.ws.rs.core.Context;
 
 /**
  *
@@ -32,7 +30,7 @@ public class ImageFile {
     }
 
     public int download(String url) {
-        System.out.println("Trying to download " + url);
+        Logger.getLogger(ImageFile.class.getName()).log(Level.INFO, null, "Trying to download " + url);
         int fileId = 0;
         try {
             InputStream in = new URL(url).openStream();
@@ -44,7 +42,7 @@ public class ImageFile {
     }
 
     public int saveContent(String content) {
-        System.out.println("Trying to save content");
+        Logger.getLogger(ImageFile.class.getName()).log(Level.INFO, null, "Trying to save content");
         DB db = new DB(properties.getProperty("redisHost"));
         int fileId = db.getCounter();
         String fileName = properties.getProperty("imagesDir") + "/" + Integer.toString(fileId);
@@ -58,10 +56,10 @@ public class ImageFile {
     }
 
     /**
-     * Запись буфера в файл
+     * Record content in the file
      *
-     * @param bytes
-     * @return id файла
+     * @param bytes file content
+     * @return file id
      */
     public int saveFile(byte[] bytes) {
         DB db = new DB(properties.getProperty("redisHost"));
@@ -75,10 +73,10 @@ public class ImageFile {
     }
 
     /**
-     * Запись потока в файл
+     * Record stream in the file
      *
-     * @param is
-     * @return id файла
+     * @param is InputStream
+     * @return file id
      */
     public int saveFile(InputStream is) {
         DB db = new DB(properties.getProperty("redisHost"));
@@ -88,6 +86,7 @@ public class ImageFile {
             byte[] buffer = new byte[is.available()];
             is.read(buffer);
             writeFile(buffer, fileName);
+            is.close();
         } catch (IOException ex) {
             Logger.getLogger(ImageFile.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -99,15 +98,15 @@ public class ImageFile {
     }
 
     /**
-     * Save base64 content in to the file
+     * Save content in the file
      *
-     * @param content
-     * @param filename
+     * @param content content
+     * @param filename filename
      * @throws IOException
      */
     private void writeFile(byte[] content, String filename) throws IOException {
         String fullpath = properties.getProperty("path") + filename;
-        System.out.println("Saving file " + fullpath);
+        Logger.getLogger(ImageFile.class.getName()).log(Level.INFO, null, "Saving file " + fullpath);
         File file = new File(fullpath);
         if (!file.exists()) {
             file.createNewFile();

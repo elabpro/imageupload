@@ -22,7 +22,7 @@ public class DBTest {
     public void testCounter() {
         System.out.println("setCounter");
         int v = 0;
-        DB db = new DB();
+        DB db = new DB("localhost");
         int expResult = 0;
         int result = db.setCounter(v);
         assertEquals(expResult, result);
