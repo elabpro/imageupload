@@ -6,24 +6,20 @@
 package pro.elab;
 
 import com.google.gson.Gson;
-import java.awt.image.BufferedImage;
+import com.google.gson.reflect.TypeToken;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.ExecutorService;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
 import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.Produces;
@@ -31,18 +27,16 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.PUT;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
-import org.jboss.resteasy.plugins.providers.multipart.InputPart;
-import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
-import org.apache.commons.io.IOUtils;
+
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemFactory;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
 /**
  * REST Web Service
@@ -67,60 +61,91 @@ public class jsonImages {
     private void loadProperties() {
         try {
             properties.load(sContext.getResourceAsStream("/WEB-INF/imageupload.properties"));
+            properties.setProperty("path", sContext.getRealPath("/"));
         } catch (Exception ex) {
             Logger.getLogger(jsonImages.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
-//    /**
-//     * POST method for updating or creating an instance of jsonImages
-//     *
-//     * @param content representation for the resource
-//     */
-//    @POST
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    public String postJson(String content) {
-//        return "[" + content.length() + "]";
-//    }
     /**
-     * POST method for updating or creating an instance of jsonImages
+     * Method POST Upload images in PNG. POST body: - JSON
+     * {{content=#base64_image_content#|url=#url#}}
      *
-     * @param MultipartFormDataInput
+     * @usage http://localhost/api/images
+     *
+     * @param content representation for the resource
+     * @return JSON array of filename
+     */
+    @POST
+    @Consumes(MediaType.APPLICATION_JSON)
+    public String postJson(String content) {
+        Logger.getLogger(jsonImages.class.getName()).log(Level.INFO, null, "POST JSON");
+        if (properties.isEmpty()) {
+            loadProperties();
+        }
+        List<String> images = new ArrayList<String>();
+        Gson gson = new Gson();
+        Type itemsArrType = new TypeToken<JSONFile[]>() {
+        }.getType();
+        JSONFile[] Items = gson.fromJson(content, itemsArrType);
+        for (int i = 0; i < Items.length; i++) {
+            if (Items[i].content != null && Items[i].content.length() > 0) {
+                int fileId = new ImageFile(properties).saveContent(Items[i].content);
+                images.add(String.valueOf(fileId));
+            }
+            if (Items[i].url != null && Items[i].url.length() > 0) {
+                int fileId = new ImageFile(properties).download(Items[i].url);
+                images.add(String.valueOf(fileId));
+            }
+        }
+        return gson.toJson(images).toString();
+    }
+
+    /**
+     * Method POST Upload images in PNG. POST body: - multipart/encoded files -
+     * url=#url#
+     *
+     * @usage http://localhost/api/images
+     *
+     * @param request
      * @return
      */
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    public Response postJson(MultipartFormDataInput input) {
-        File local;
-        //Get API input data
-        Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
-
+    public Response postMP(@Context HttpServletRequest request) {
+        int status = 200;
         if (properties.isEmpty()) {
             loadProperties();
         }
-
-        //The file name
-        String fileName;
-        String pathFileName = "";
-
-        //Get file data to save
-        List<InputPart> inputParts = uploadForm.get("attachment");
-
-        try {
-            for (InputPart inputPart : inputParts) {
-                //Use this header for extra processing if required
-                MultivaluedMap<String, String> header = inputPart.getHeaders();
-                // convert the uploaded file to input stream
-                InputStream inputStream = inputPart.getBody(InputStream.class, null);
-                byte[] bytes = IOUtils.toByteArray(inputStream);
-                // constructs upload file path
-                new ImageFile(properties).saveFile(bytes);
+        if (ServletFileUpload.isMultipartContent(request)) {
+            Logger.getLogger(jsonImages.class.getName()).log(Level.INFO, null, "POST MP");
+            FileItemFactory factory = new DiskFileItemFactory();
+            ServletFileUpload fileUpload = new ServletFileUpload(factory);
+            try {
+                List<FileItem> items = fileUpload.parseRequest(request);
+                if (items != null) {
+                    Iterator<FileItem> iter = items.iterator();
+                    /*
+                     * Return true if the instance represents a simple form
+                     * field. Return false if it represents an uploaded file.
+                     */
+                    while (iter.hasNext()) {
+                        final FileItem item = iter.next();
+                        final String itemName = item.getName();
+                        final String fieldName = item.getFieldName();
+                        final String fieldValue = item.getString();
+                        new ImageFile(properties).saveFile(item.getInputStream());
+                    }
+                }
+            } catch (FileUploadException e) {
+                status = 404;
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+                status = 404;
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return Response.serverError().build();
         }
-        return Response.status(201).entity(pathFileName).build();
+        return Response.status(status).build();
     }
 
     /**
