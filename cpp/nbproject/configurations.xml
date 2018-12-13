@@ -40,7 +40,12 @@
           <commandLine>-I libs/pistache/include $(shell pkg-config --cflags libfastjson)</commandLine>
         </ccTool>
         <linkerTool>
-          <commandLine>-lpistache -lrt -lpthread -lboost_filesystem -lboost_system -lfastjson</commandLine>
+          <linkerLibItems>
+            <linkerOptionItem>`pkg-config --libs libpistache`</linkerOptionItem>
+            <linkerOptionItem>`pkg-config --libs pthread-stubs`</linkerOptionItem>
+            <linkerOptionItem>`pkg-config --libs libfastjson`</linkerOptionItem>
+          </linkerLibItems>
+          <commandLine>-lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -L/usr/local/lib</commandLine>
         </linkerTool>
       </compileType>
       <folder path="ResourceFiles">

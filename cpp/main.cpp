@@ -14,6 +14,7 @@
 #include <pistache/router.h>
 #include <pistache/endpoint.h>
 #include <libfastjson/json.h>
+#include <MPFDParser-1/Parser.h>
 
 using namespace std;
 using namespace Pistache;
@@ -74,23 +75,63 @@ private:
     }
 
     void doPost(const Rest::Request& req, Http::ResponseWriter response) {
-        std::cout << "doPost" << req.param("url").as<std::string>() << endl;
-        if (req.method() == Http::Method::Post) {
+        std::cout << "doPost" << endl;
+        std::cout << req.body() << endl;
 
-            using namespace Http;
+        try {
+            MPFD::Parser* POSTParser = new MPFD::Parser();
+            POSTParser->SetTempDirForFileUpload("/tmp");
+            POSTParser->SetMaxCollectedDataLength(20 * 1024);
+            string body = req.body();
+            string head = body.substr(0, 2);
+            if (head.compare("[{") != 0) {
+                cout << "Head:" << head << endl;
+                auto content_type = req.headers().tryGet<Pistache::Http::Header::ContentType>();
+                POSTParser->SetContentType(content_type->mime().toString());
+                POSTParser->AcceptSomeData(body.c_str(), body.length());
+                // Now see what we have:
+                std::map<std::string, MPFD::Field *> fields = POSTParser->GetFieldsMap();
 
-            auto query = req.query();
+                std::cout << "Have " << fields.size() << " fields\n\r";
 
-            cout << req.headers().get("Content-type") << endl;
-
-            //                if (req.method() == Http::Method::Post) {
-            //                    writeToFile("test", req.body());
-            //                    response.send(Http::Code::Ok, "ok");
-            //                } else {
-            //                    response.send(Http::Code::Ok, "No parameters");
-            //                }
-
+                std::map<std::string, MPFD::Field *>::iterator it;
+                for (it = fields.begin(); it != fields.end(); it++) {
+                    if (fields[it->first]->GetType() == MPFD::Field::TextType) {
+                        if (it->first.compare("url")) {
+                            string filename = fields[it->first]->GetTextTypeContent();
+                            downloadFile(filename);
+                        }
+                    } else {
+                        std::cout << "Got file field: [" << it->first << "] Filename:[" << fields[it->first]->GetFileName() << "] \n";
+                    }
+                }
+            } else {
+                cout << "It must be JSON" << endl;
+                fjson_object *jsonObj;
+                jsonObj = fjson_tokener_parse(body.c_str());
+                printf("my_array=\n");
+                for (int i = 0; i < fjson_object_array_length(jsonObj); i++) {
+                    fjson_object *obj = fjson_object_array_get_idx(jsonObj, i);
+                    printf("my_object=\n");
+                    struct fjson_object_iterator it = fjson_object_iter_begin(obj);
+                    struct fjson_object_iterator itEnd = fjson_object_iter_end(obj);
+                    while (!fjson_object_iter_equal(&it, &itEnd)) {
+                        string tagName = fjson_object_iter_peek_name(&it);
+                        string tagValue = fjson_object_to_json_string(fjson_object_iter_peek_value(&it));
+                        if (tagName.compare("url") == 0) {
+                            downloadFile(tagValue);
+                        }
+                        if (tagName.compare("content") == 0) {
+                            cout << "Need to parse base64\n";
+                        }
+                        fjson_object_iter_next(&it);
+                    }
+                }
+            }
+        } catch (MPFD::Exception ex) {
+            cout << "Exception:" << ex.GetError() << endl;
         }
+        response.send(Http::Code::Ok);
     }
 
     /**
@@ -125,63 +166,24 @@ private:
      */
     void doGetImage(const Rest::Request& request, Http::ResponseWriter response) {
         auto id = request.param(":id").as<int>();
+        auto stream = response.stream(Http::Code::Ok);
         std::ifstream fin(path + "/" + std::to_string(id), ios::binary);
-        ostringstream ostrm;
-        ostrm << fin.rdbuf();
-        string buf(ostrm.str());
         response.headers().add<Http::Header::ContentType>(MIME(Image, Png));
-        response.headers().add<Pistache::Http::Header::ContentLength>(buf.length());
-        response.send(Http::Code::Ok, buf);
+        char* binary_data = new char[1024];
+        size_t chunk_size = sizeof (binary_data);
+        size_t readed;
+        int length = 0;
+        while (!fin.eof()) {
+            fin.read(binary_data, chunk_size);
+            readed = fin.gcount();
+            length += readed;
+            stream.write(binary_data, readed);
+            stream.flush();
+        }
+        response.headers().add<Pistache::Http::Header::ContentLength>(length);
+        delete binary_data;
+        stream.ends();
     }
-
-    //    void doRecordMetric(const Rest::Request& request, Http::ResponseWriter response) {
-    //        auto name = request.param(":name").as<std::string>();
-    //
-    //        Guard guard(metricsLock);
-    //        auto it = std::find_if(metrics.begin(), metrics.end(), [&](const Metric & metric) {
-    //            return metric.name() == name;
-    //        });
-    //
-    //        int val = 1;
-    //        if (request.hasParam(":value")) {
-    //            auto value = request.param(":value");
-    //            val = value.as<int>();
-    //        }
-    //
-    //        if (it == std::end(metrics)) {
-    //            metrics.push_back(Metric(std::move(name), val));
-    //            response.send(Http::Code::Created, std::to_string(val));
-    //        } else {
-    //            auto &metric = *it;
-    //            metric.incr(val);
-    //            response.send(Http::Code::Ok, std::to_string(metric.value()));
-    //        }
-    //
-    //    }
-
-    //    void doGetMetric(const Rest::Request& request, Http::ResponseWriter response) {
-    //        auto name = request.param(":name").as<std::string>();
-    //
-    //        Guard guard(metricsLock);
-    //        auto it = std::find_if(metrics.begin(), metrics.end(), [&](const Metric & metric) {
-    //            return metric.name() == name;
-    //        });
-    //
-    //        if (it == std::end(metrics)) {
-    //            response.send(Http::Code::Not_Found, "Metric does not exist");
-    //        } else {
-    //            const auto& metric = *it;
-    //            response.send(Http::Code::Ok, std::to_string(metric.value()));
-    //        }
-    //
-    //    }
-
-    //    void doAuth(const Rest::Request& request, Http::ResponseWriter response) {
-    //        printCookies(request);
-    //        response.cookies()
-    //                .add(Http::Cookie("lang", "en-US"));
-    //        response.send(Http::Code::Ok);
-    //    }
 
     void writeToFile(const string & filename, const string & data) {
         std::ofstream out;
@@ -189,6 +191,22 @@ private:
         out << data;
         out.close();
 
+    }
+
+    void downloadFile(const string & filename) {
+        string f = filename;
+        replaceAll(f, "\\/", "/");
+        cout << "Trying to download file " << f << endl;
+    }
+
+    void replaceAll(std::string& str, const std::string& from, const std::string& to) {
+        if (from.empty())
+            return;
+        size_t start_pos = 0;
+        while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+            str.replace(start_pos, from.length(), to);
+            start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+        }
     }
 
     typedef std::mutex Lock;
