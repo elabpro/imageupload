@@ -6,7 +6,7 @@ FROM thecodingmachine/php:7.2-v2-apache
 #COPY apt.conf /etc/apt/apt.conf
 
 RUN sudo apt-get update
-RUN sudo apt-get -y install imagemagick wget net-tools curl
+RUN sudo apt-get -y install imagemagick curl
 
 RUN echo -h
 

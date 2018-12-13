@@ -5,7 +5,7 @@ FROM glassfish:latest
 #COPY apt.conf /etc/apt/apt.conf
 
 RUN apt-get -y update
-RUN apt-get -y install make git curl net-tools imagemagick
+RUN apt-get -y install git curl imagemagick
 
 RUN echo "Deploy application"
 COPY dist/ImageUpload_-_Java.war /root
