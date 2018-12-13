@@ -4,11 +4,13 @@
     <logicalFolder name="SourceFiles"
                    displayName="Исходные файлы"
                    projectFiles="true">
+      <itemPath>DB.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="HeaderFiles"
                    displayName="Файлы заголовков"
                    projectFiles="true">
+      <itemPath>DB.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Файлы ресурсов"
@@ -45,9 +47,13 @@
             <linkerOptionItem>`pkg-config --libs pthread-stubs`</linkerOptionItem>
             <linkerOptionItem>`pkg-config --libs libfastjson`</linkerOptionItem>
           </linkerLibItems>
-          <commandLine>-lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -L/usr/local/lib</commandLine>
+          <commandLine>-lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient</commandLine>
         </linkerTool>
       </compileType>
+      <item path="DB.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="DB.h" ex="false" tool="3" flavor2="0">
+      </item>
       <folder path="ResourceFiles">
         <ccTool>
           <commandLine>-lpistache</commandLine>
@@ -76,6 +82,10 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
+      <item path="DB.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="DB.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>

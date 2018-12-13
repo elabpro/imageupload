@@ -35,6 +35,7 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/DB.o \
 	${OBJECTDIR}/main.o
 
 
@@ -60,7 +61,12 @@ LDLIBSOPTIONS=`pkg-config --libs libpistache` `pkg-config --libs pthread-stubs` 
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp ${OBJECTFILES} ${LDLIBSOPTIONS} -lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -L/usr/local/lib
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp ${OBJECTFILES} ${LDLIBSOPTIONS} -lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient
+
+${OBJECTDIR}/DB.o: DB.cpp
+	${MKDIR} -p ${OBJECTDIR}
+	${RM} "$@.d"
+	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DB.o DB.cpp
 
 ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}

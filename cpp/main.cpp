@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <boost/filesystem.hpp>
@@ -15,6 +16,7 @@
 #include <pistache/endpoint.h>
 #include <libfastjson/json.h>
 #include <MPFDParser-1/Parser.h>
+#include "DB.h"
 
 using namespace std;
 using namespace Pistache;
@@ -46,11 +48,15 @@ public:
     }
 
     void init(size_t thr = 2) {
+        // 10 Mb
         auto opts = Http::Endpoint::options()
                 .threads(thr)
-                .flags(Tcp::Options::InstallSignalHandler);
+                .flags(Tcp::Options::InstallSignalHandler)
+                .maxPayload(maxPostSize);
         httpEndpoint->init(opts);
         setupRoutes();
+        db = new DB();
+        db->setCounter(0);
     }
 
     void start() {
@@ -65,7 +71,12 @@ public:
 private:
 
     std::string path = "images.full";
+    int maxPostSize = 10 * 1024 * 1024;
+    DB* db;
 
+    /**
+     * Setting routes for API
+     */
     void setupRoutes() {
         using namespace Rest;
 
@@ -74,18 +85,21 @@ private:
         Routes::Get(router, "/api/images/:id", Routes::bind(&StatsEndpoint::doGetImage, this));
     }
 
+    /**
+     * 
+     * @param req
+     * @param response
+     */
     void doPost(const Rest::Request& req, Http::ResponseWriter response) {
         std::cout << "doPost" << endl;
-        std::cout << req.body() << endl;
-
         try {
             MPFD::Parser* POSTParser = new MPFD::Parser();
             POSTParser->SetTempDirForFileUpload("/tmp");
-            POSTParser->SetMaxCollectedDataLength(20 * 1024);
+            POSTParser->SetMaxCollectedDataLength(maxPostSize);
             string body = req.body();
             string head = body.substr(0, 2);
+            cout << "Head:" << head << endl;
             if (head.compare("[{") != 0) {
-                cout << "Head:" << head << endl;
                 auto content_type = req.headers().tryGet<Pistache::Http::Header::ContentType>();
                 POSTParser->SetContentType(content_type->mime().toString());
                 POSTParser->AcceptSomeData(body.c_str(), body.length());
@@ -97,12 +111,14 @@ private:
                 std::map<std::string, MPFD::Field *>::iterator it;
                 for (it = fields.begin(); it != fields.end(); it++) {
                     if (fields[it->first]->GetType() == MPFD::Field::TextType) {
-                        if (it->first.compare("url")) {
+                        cout << it->first << endl;
+                        if (it->first.compare("url") == 0) {
                             string filename = fields[it->first]->GetTextTypeContent();
                             downloadFile(filename);
                         }
                     } else {
                         std::cout << "Got file field: [" << it->first << "] Filename:[" << fields[it->first]->GetFileName() << "] \n";
+                        createImageFromFile(fields[it->first]->GetTempFileName());
                     }
                 }
             } else {
@@ -193,6 +209,32 @@ private:
 
     }
 
+    int createImageFromFile(const string & tmpFilename) {
+        string filename = getFilename();
+        createLockForFile(filename);
+        try {
+            boost::filesystem::rename(tmpFilename, "/tmp/test.png");
+        } catch (boost::filesystem::filesystem_error& e) {
+            cout << e.what() << '\n';
+        }
+        deleteLockForFile(filename);
+        return 1;
+    }
+
+    int createLockForFile(const string & filename) {
+        std::ofstream outfile(filename + ".lock");
+        outfile << "1" << std::endl;
+        outfile.close();
+        return 1;
+    }
+
+    int deleteLockForFile(const string & filename) {
+        string lockfilename = filename + ".lock";
+        std::ofstream outfile(lockfilename);
+        std::remove(lockfilename.c_str());
+        return 1;
+    }
+
     void downloadFile(const string & filename) {
         string f = filename;
         replaceAll(f, "\\/", "/");
@@ -209,9 +251,10 @@ private:
         }
     }
 
-    typedef std::mutex Lock;
-    typedef std::lock_guard<Lock> Guard;
-    Lock metricsLock;
+    string getFilename() {
+        cout << "New id:" << db->getCounter() << endl;
+        return "/tmp/test";
+    }
 
     std::shared_ptr<Http::Endpoint> httpEndpoint;
     Rest::Router router;
