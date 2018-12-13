@@ -24,6 +24,7 @@
                    projectFiles="false"
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Makefile</itemPath>
+      <itemPath>prepare.sh</itemPath>
     </logicalFolder>
   </logicalFolder>
   <projectmakefile>Makefile</projectmakefile>
@@ -35,7 +36,18 @@
         <rebuildPropChanged>false</rebuildPropChanged>
       </toolsSet>
       <compileType>
+        <ccTool>
+          <commandLine>-I libs/pistache/include $(shell pkg-config --cflags libfastjson)</commandLine>
+        </ccTool>
+        <linkerTool>
+          <commandLine>-lpistache -lrt -lpthread -lboost_filesystem -lboost_system -lfastjson</commandLine>
+        </linkerTool>
       </compileType>
+      <folder path="ResourceFiles">
+        <ccTool>
+          <commandLine>-lpistache</commandLine>
+        </ccTool>
+      </folder>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>

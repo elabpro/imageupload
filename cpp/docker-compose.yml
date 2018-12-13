@@ -1,0 +1,27 @@
+version: "2"
+
+services:
+    redis:
+        image: redis
+        command: ["sh", "-c", "exec redis-server"]
+        networks:
+            - backend
+    app:
+        build: 
+            context: .
+            dockerfile: Dockerfile
+        depends_on:
+            - redis
+        ports:
+            - 8080:8000
+        networks:
+            - backend
+            - frontend
+        volumes:
+            - ./:/mnt
+        command: ["sh","-c","unset http_proxy && cd /mnt/src && make docker"]
+
+networks:
+  frontend:
+  backend:
+

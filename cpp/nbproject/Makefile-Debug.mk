@@ -42,8 +42,8 @@ OBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=
-CXXFLAGS=
+CCFLAGS=-I libs/pistache/include $(shell pkg-config --cflags libfastjson)
+CXXFLAGS=-I libs/pistache/include $(shell pkg-config --cflags libfastjson)
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -60,7 +60,7 @@ LDLIBSOPTIONS=
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp ${OBJECTFILES} ${LDLIBSOPTIONS}
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp ${OBJECTFILES} ${LDLIBSOPTIONS} -lpistache -lrt -lpthread -lboost_filesystem -lboost_system -lfastjson
 
 ${OBJECTDIR}/main.o: main.cpp
 	${MKDIR} -p ${OBJECTDIR}
