@@ -33,7 +33,9 @@
                    displayName="Важные файлы"
                    projectFiles="false"
                    kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Dockerfile</itemPath>
       <itemPath>Makefile</itemPath>
+      <itemPath>docker-compose.yml</itemPath>
       <itemPath>prepare.sh</itemPath>
     </logicalFolder>
   </logicalFolder>

@@ -1,32 +1,38 @@
 #!/bin/sh
 PWD=$(pwd)
 
-sudo apt-get -y install libboost-all-dev libfastjson-dev libpthread-stubs0-dev libcurl4-gnutls-dev
+apt-get -y install libboost-all-dev libfastjson-dev libpthread-stubs0-dev libcurl4-gnutls-dev
 
 echo "Installing library to parse multipart requests"
-cd libs/MPFDParser-1.1.1
-mkdir build
+cd libs
+tar -zxf MPFDParser-1.1.1.tar.gz
+cd MPFDParser-1.1.1
+rm -f build && mkdir build
 cd build
 cmake ..
 make
-sudo make install
+make install
 cd ../../..
 echo "Installing library for making REST API on C++"
-cd libs/pistache
-mkdir build
+cd libs
+tar -zxf pistache.tar.gz
+cd pistache
+rm -f build && mkdir build
 cd build
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 make
-sudo make install
+make install
 cd ../../..
 echo "Installing library for communication with Redis DB"
-cd $PWD/libs/redisclient
-mkdir build
+cd libs
+tar -zxf redisclient.tar.gz
+cd redisclient
+rm -f build && mkdir build
 cd build
 cmake ..
 make
-sudo make install
-sudo cp ../src/redisclient/impl/*.cpp /usr/local/include/redisclient/impl/
+make install
+cp ../src/redisclient/impl/*.cpp /usr/local/include/redisclient/impl/
 cd ../../..
 
 mkdir images.full images.thumb
