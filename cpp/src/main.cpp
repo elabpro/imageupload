@@ -19,6 +19,7 @@
 #include <curl/curl.h>
 #include "DB.h"
 #include "base64.h"
+#include "Config.h"
 
 #define DEBUG_MODE
 
@@ -51,15 +52,18 @@ public:
     : httpEndpoint(std::make_shared<Http::Endpoint>(addr)) {
     }
 
-    void init(size_t thr = 2) {
+    void init(size_t thr = 2, bool mode = true, Config* c = new Config()) {
         auto opts = Http::Endpoint::options()
                 .threads(thr)
                 .flags(Tcp::Options::InstallSignalHandler)
                 .maxPayload(maxPostSize);
         httpEndpoint->init(opts);
         setupRoutes();
-        db = new DB();
-        check();
+        config = c;
+        db = new DB(config->redisHost);
+        if (mode) {
+            check();
+        }
     }
 
     void start() {
@@ -73,15 +77,22 @@ public:
 
 private:
 
-    std::string imagesDir = "images.full";
-    std::string imagesThumbDir = "images.thumb";
     // Limit 10 Mb
     int maxPostSize = 10 * 1024 * 1024;
+    Config* config;
     DB* db;
 
     void check() {
         int maxId = 0;
-        for (auto & p : directory_iterator(imagesDir)) {
+        if (access(config->imagesDir.c_str(), F_OK) == -1) {
+            std::cout << "FATAL ERROR: Can't find " << config->imagesDir << endl;
+            // exit(1);
+        }
+        if (access(config->imagesThumbDir.c_str(), F_OK) == -1) {
+            std::cout << "FATAL ERROR: Can't find " << config->imagesThumbDir << endl;
+            // exit(1);
+        }
+        for (auto & p : directory_iterator(config->imagesDir)) {
             std::size_t found = p.path().string().find(".lock");
             if (found != std::string::npos) {
                 string filename = p.path().string().substr(0, found);
@@ -89,26 +100,21 @@ private:
                 std::remove(filename.c_str());
                 deleteLockForFile(filename);
             } else {
-                int id = atoi(p.path().string().substr(imagesDir.length() + 1).c_str());
+                int id = atoi(p.path().string().substr(config->imagesDir.length() + 1).c_str());
                 if (id > maxId) {
                     maxId = id;
                 }
             }
         }
-        for (auto & p : directory_iterator(imagesThumbDir)) {
-            std::size_t found = p.path().string().find(".lock");
-            if (found != std::string::npos) {
-                string filename = p.path().string().substr(0, found);
-                int fileId = atoi(filename.substr(imagesDir.length() + 1).c_str());
-                cout << "Recreating thumb for " << filename << endl;
-                createThumb(fileId);
-            } else {
-                int id = atoi(p.path().string().substr(imagesDir.length() + 1).c_str());
-                if (id > maxId) {
-                    maxId = id;
+                for (auto & p : directory_iterator(config->imagesThumbDir)) {
+                    std::size_t found = p.path().string().find(".lock");
+                    if (found != std::string::npos) {
+                        string filename = p.path().string().substr(0, found);
+                        int fileId = atoi(filename.substr(config->imagesThumbDir.length() + 1).c_str());
+                        cout << "Recreating thumb for " << filename << endl;
+                        createThumb(fileId);
+                    } 
                 }
-            }
-        }
         cout << "Setting counter to " << maxId << endl;
         db->setCounter(maxId);
     }
@@ -221,8 +227,8 @@ private:
     void doGetImages(const Rest::Request& request, Http::ResponseWriter response) {
         fjson_object *images = fjson_object_new_array();
         std::string body = "";
-        for (auto & p : directory_iterator(imagesDir)) {
-            fjson_object_array_add(images, fjson_object_new_string(p.path().string().substr(imagesDir.length() + 1).c_str()));
+        for (auto & p : directory_iterator(config->imagesDir)) {
+            fjson_object_array_add(images, fjson_object_new_string(p.path().string().substr(config->imagesDir.length() + 1).c_str()));
         }
         if (images != NULL) {
             body = fjson_object_to_json_string(images);
@@ -242,7 +248,7 @@ private:
     void doGetImage(const Rest::Request& request, Http::ResponseWriter response) {
         auto id = request.param(":id").as<int>();
         auto stream = response.stream(Http::Code::Ok);
-        std::ifstream fin(imagesDir + "/" + std::to_string(id), ios::binary);
+        std::ifstream fin(config->imagesDir + "/" + std::to_string(id), ios::binary);
         response.headers().add<Http::Header::ContentType>(MIME(Image, Png));
         char* binary_data = new char[1024];
         size_t chunk_size = sizeof (binary_data);
@@ -300,7 +306,7 @@ private:
         base64* b64 = new base64();
         int l = in.length();
         string content = in.substr(1, l - 2);
-        replaceAll(content, "\\/", "/");
+        config->replaceAll(content, "\\/", "/");
 #ifdef DEBUG_MODE
         cout << "Trying to save from base64" << endl;
 #endif
@@ -372,8 +378,8 @@ private:
         string filename = getFilename(fileId);
         createLockForFile(filename);
         string url = urlName;
-        replaceAll(url, "\\/", "/");
-        replaceAll(url, "\"", "");
+        config->replaceAll(url, "\\/", "/");
+        config->replaceAll(url, "\"", "");
         cout << "Trying to download file " << url << " into " << filename << endl;
         CURL *curl;
         FILE *fp;
@@ -399,18 +405,8 @@ private:
         return written;
     }
 
-    void replaceAll(std::string& str, const std::string& from, const std::string& to) {
-        if (from.empty())
-            return;
-        size_t start_pos = 0;
-        while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-            str.replace(start_pos, from.length(), to);
-            start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
-        }
-    }
-
     string getFilename(int fileId) {
-        string filename = imagesDir + "/" + std::to_string(fileId);
+        string filename = config->imagesDir + "/" + std::to_string(fileId);
 #ifdef DEBUG_MODE
         cout << "Filename:" << filename << endl;
 #endif
@@ -418,7 +414,7 @@ private:
     }
 
     string getThumbFilename(int fileId) {
-        string filename = imagesThumbDir + "/" + std::to_string(fileId);
+        string filename = config->imagesThumbDir + "/" + std::to_string(fileId);
 #ifdef DEBUG_MODE
         cout << "Filename:" << filename << endl;
 #endif
@@ -430,25 +426,75 @@ private:
     Rest::Router router;
 };
 
-int main(int argc, char *argv[]) {
-    Port port(8080);
+Config* readConfig() {
+    Config* c = new Config();
+    string configFilename = "config.json";
+    if (access(configFilename.c_str(), F_OK) != -1) {
+        std::ifstream fin(configFilename.c_str());
+        std::stringstream body;
+        body << fin.rdbuf();
+        fin.close();
+        string bodyString = body.str();
+        fjson_object *obj = fjson_tokener_parse(bodyString.c_str());
+        struct fjson_object_iterator it = fjson_object_iter_begin(obj);
+        struct fjson_object_iterator itEnd = fjson_object_iter_end(obj);
+        while (!fjson_object_iter_equal(&it, &itEnd)) {
+            string tagName = fjson_object_iter_peek_name(&it);
+            string tagValue = fjson_object_to_json_string(fjson_object_iter_peek_value(&it));
+            c->replaceAll(tagValue, "\\/", "/");
+            c->replaceAll(tagValue, "\"", "");
+            if (tagName.compare("redisHost") == 0) {
+                c->redisHost = tagValue;
+            }
+            if (tagName.compare("host") == 0) {
+                c->listenHost = tagValue;
+            }
+            if (tagName.compare("port") == 0) {
+                c->listenPort = atoi(tagValue.c_str());
+            }
+            if (tagName.compare("imagesDir") == 0 && access(tagValue.c_str(), F_OK) != -1) {
+                c->imagesDir = tagValue;
+            }
+            if (tagName.compare("imagesThumbDir") == 0 && access(tagValue.c_str(), F_OK) != -1) {
+                c->imagesThumbDir = tagValue;
+            }
+            fjson_object_iter_next(&it);
+        }
+    }
+    return c;
+}
 
+int main(int argc, char *argv[]) {
+    pid_t pid;
     int thr = 2;
 
-    if (argc >= 2) {
-        port = std::stol(argv[1]);
-
-        if (argc == 3)
-            thr = std::stol(argv[2]);
+    Config* c = readConfig();
+    cout << "C++ project v.0.8. Image API is ready" << endl;
+    cout << "URL http://localhost:" << c->listenPort << "/api/images" << endl;
+    cout << "Source code from https://github.com/elabpro/imageupload" << endl;
+    c->print();
+    switch (pid = fork()) {
+        case -1:
+            perror("fork"); /* произошла ошибка */
+            exit(1); /*выход из родительского процесса*/
+        case 0:
+        {
+            Port port(8000);
+            Address addr(Ipv4::any(), port);
+            StatsEndpoint stats(addr);
+            stats.init(thr, false, c);
+            stats.start();
+            stats.shutdown();
+            break;
+        }
+        default:
+        {
+            Port port(c->listenPort);
+            Address addr(Ipv4::any(), port);
+            StatsEndpoint statsDef(addr);
+            statsDef.init(thr, true, c);
+            statsDef.start();
+            statsDef.shutdown();
+        }
     }
-
-    Address addr(Ipv4::any(), port);
-
-    cout << "Cores = " << hardware_concurrency() << endl;
-    cout << "Using " << thr << " threads" << endl;
-
-    StatsEndpoint stats(addr);
-    stats.init(thr);
-    stats.start();
-    stats.shutdown();
 }

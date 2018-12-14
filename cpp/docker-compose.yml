@@ -19,7 +19,7 @@ services:
             - frontend
         volumes:
             - ./:/mnt
-        command: ["sh","-c","/usr/local/imagecup/dist/Debug/GNU-Linux/cpp"]
+        command: ["sh","-c","cd /usr/local/imageapi && /usr/local/imageapi/dist/Debug/GNU-Linux/cpp"]
 
 networks:
   frontend:

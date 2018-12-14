@@ -35,9 +35,10 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
-	${OBJECTDIR}/DB.o \
-	${OBJECTDIR}/base64.o \
-	${OBJECTDIR}/main.o
+	${OBJECTDIR}/src/Config.o \
+	${OBJECTDIR}/src/DB.o \
+	${OBJECTDIR}/src/base64.o \
+	${OBJECTDIR}/src/main.o
 
 # Test Directory
 TESTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}/tests
@@ -54,8 +55,8 @@ TESTOBJECTFILES= \
 CFLAGS=
 
 # CC Compiler Flags
-CCFLAGS=-I libs/pistache/include $(shell pkg-config --cflags libfastjson)
-CXXFLAGS=-I libs/pistache/include $(shell pkg-config --cflags libfastjson)
+CCFLAGS=-I libs/pistache/include $(shell pkg-config --cflags libfastjson) -I include
+CXXFLAGS=-I libs/pistache/include $(shell pkg-config --cflags libfastjson) -I include
 
 # Fortran Compiler Flags
 FFLAGS=
@@ -72,22 +73,27 @@ LDLIBSOPTIONS=`pkg-config --libs libpistache` `pkg-config --libs pthread-stubs` 
 
 ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
-	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp ${OBJECTFILES} ${LDLIBSOPTIONS} -lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient
+	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/cpp ${OBJECTFILES} ${LDLIBSOPTIONS} -lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient -I include
 
-${OBJECTDIR}/DB.o: DB.cpp
-	${MKDIR} -p ${OBJECTDIR}
+${OBJECTDIR}/src/Config.o: src/Config.cpp
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DB.o DB.cpp
+	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Config.o src/Config.cpp
 
-${OBJECTDIR}/base64.o: base64.cpp
-	${MKDIR} -p ${OBJECTDIR}
+${OBJECTDIR}/src/DB.o: src/DB.cpp
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/base64.o base64.cpp
+	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/DB.o src/DB.cpp
 
-${OBJECTDIR}/main.o: main.cpp
-	${MKDIR} -p ${OBJECTDIR}
+${OBJECTDIR}/src/base64.o: src/base64.cpp
+	${MKDIR} -p ${OBJECTDIR}/src
 	${RM} "$@.d"
-	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main.o main.cpp
+	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/base64.o src/base64.cpp
+
+${OBJECTDIR}/src/main.o: src/main.cpp
+	${MKDIR} -p ${OBJECTDIR}/src
+	${RM} "$@.d"
+	$(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/main.o src/main.cpp
 
 # Subprojects
 .build-subprojects:
@@ -107,43 +113,56 @@ ${TESTDIR}/tests/base64Test.o: tests/base64Test.cpp
 	$(COMPILE.cc) -g -I. `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -MMD -MP -MF "$@.d" -o ${TESTDIR}/tests/base64Test.o tests/base64Test.cpp
 
 
-${OBJECTDIR}/DB_nomain.o: ${OBJECTDIR}/DB.o DB.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/DB.o`; \
+${OBJECTDIR}/src/Config_nomain.o: ${OBJECTDIR}/src/Config.o src/Config.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/Config.o`; \
 	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
 	then  \
 	    ${RM} "$@.d";\
-	    $(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/DB_nomain.o DB.cpp;\
+	    $(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/Config_nomain.o src/Config.cpp;\
 	else  \
-	    ${CP} ${OBJECTDIR}/DB.o ${OBJECTDIR}/DB_nomain.o;\
+	    ${CP} ${OBJECTDIR}/src/Config.o ${OBJECTDIR}/src/Config_nomain.o;\
 	fi
 
-${OBJECTDIR}/base64_nomain.o: ${OBJECTDIR}/base64.o base64.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/base64.o`; \
+${OBJECTDIR}/src/DB_nomain.o: ${OBJECTDIR}/src/DB.o src/DB.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/DB.o`; \
 	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
 	then  \
 	    ${RM} "$@.d";\
-	    $(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/base64_nomain.o base64.cpp;\
+	    $(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/DB_nomain.o src/DB.cpp;\
 	else  \
-	    ${CP} ${OBJECTDIR}/base64.o ${OBJECTDIR}/base64_nomain.o;\
+	    ${CP} ${OBJECTDIR}/src/DB.o ${OBJECTDIR}/src/DB_nomain.o;\
 	fi
 
-${OBJECTDIR}/main_nomain.o: ${OBJECTDIR}/main.o main.cpp 
-	${MKDIR} -p ${OBJECTDIR}
-	@NMOUTPUT=`${NM} ${OBJECTDIR}/main.o`; \
+${OBJECTDIR}/src/base64_nomain.o: ${OBJECTDIR}/src/base64.o src/base64.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/base64.o`; \
 	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
 	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
 	then  \
 	    ${RM} "$@.d";\
-	    $(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/main_nomain.o main.cpp;\
+	    $(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/base64_nomain.o src/base64.cpp;\
 	else  \
-	    ${CP} ${OBJECTDIR}/main.o ${OBJECTDIR}/main_nomain.o;\
+	    ${CP} ${OBJECTDIR}/src/base64.o ${OBJECTDIR}/src/base64_nomain.o;\
+	fi
+
+${OBJECTDIR}/src/main_nomain.o: ${OBJECTDIR}/src/main.o src/main.cpp 
+	${MKDIR} -p ${OBJECTDIR}/src
+	@NMOUTPUT=`${NM} ${OBJECTDIR}/src/main.o`; \
+	if (echo "$$NMOUTPUT" | ${GREP} '|main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T main$$') || \
+	   (echo "$$NMOUTPUT" | ${GREP} 'T _main$$'); \
+	then  \
+	    ${RM} "$@.d";\
+	    $(COMPILE.cc) -g `pkg-config --cflags libpistache` `pkg-config --cflags pthread-stubs` `pkg-config --cflags libfastjson` `pkg-config --cflags libcurl`   -Dmain=__nomain -MMD -MP -MF "$@.d" -o ${OBJECTDIR}/src/main_nomain.o src/main.cpp;\
+	else  \
+	    ${CP} ${OBJECTDIR}/src/main.o ${OBJECTDIR}/src/main_nomain.o;\
 	fi
 
 # Run Test Targets

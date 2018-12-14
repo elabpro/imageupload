@@ -23,13 +23,14 @@
 
 class DB {
 public:
-    DB();
+    DB(std::string host);
     DB(const DB& orig);
     virtual ~DB();
     void setCounter(int value);
     int getCounter();
     int getCurrentCounter();
 private:
+    std::string redisHost = "localhost";
     redisclient::RedisSyncClient connect();
     const std::string redisKey = "counter";
 };

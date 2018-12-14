@@ -13,7 +13,8 @@
 
 #include "DB.h"
 
-DB::DB() {
+DB::DB(std::string host) {
+    redisHost = host;
 
 }
 
@@ -24,9 +25,15 @@ DB::~DB() {
 }
 
 redisclient::RedisSyncClient DB::connect() {
-    boost::asio::ip::address address = boost::asio::ip::address::from_string("127.0.0.1");
+    std::cout << "Connection to Redis on " << redisHost << std::endl;
+
+    boost::asio::io_service service;
+    boost::asio::ip::tcp::resolver resolver(service);
+    boost::asio::ip::tcp::resolver::query query(redisHost, "6379");
+    boost::asio::ip::tcp::resolver::iterator iter = resolver.resolve(query);
+    boost::asio::ip::tcp::endpoint ep = *iter;
     const unsigned short port = 6379;
-    boost::asio::ip::tcp::endpoint endpoint(address, port);
+    boost::asio::ip::tcp::endpoint endpoint(ep.address(), port);
 
     boost::asio::io_service ioService;
     redisclient::RedisSyncClient redis(ioService);

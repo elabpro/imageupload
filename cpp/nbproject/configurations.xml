@@ -4,15 +4,17 @@
     <logicalFolder name="SourceFiles"
                    displayName="Исходные файлы"
                    projectFiles="true">
-      <itemPath>DB.cpp</itemPath>
-      <itemPath>base64.cpp</itemPath>
-      <itemPath>main.cpp</itemPath>
+      <itemPath>src/Config.cpp</itemPath>
+      <itemPath>src/DB.cpp</itemPath>
+      <itemPath>src/base64.cpp</itemPath>
+      <itemPath>src/main.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="HeaderFiles"
                    displayName="Файлы заголовков"
                    projectFiles="true">
-      <itemPath>DB.h</itemPath>
-      <itemPath>base64.h</itemPath>
+      <itemPath>include/Config.h</itemPath>
+      <itemPath>include/DB.h</itemPath>
+      <itemPath>include/base64.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Файлы ресурсов"
@@ -35,6 +37,7 @@
                    kind="IMPORTANT_FILES_FOLDER">
       <itemPath>Dockerfile</itemPath>
       <itemPath>Makefile</itemPath>
+      <itemPath>tests/config.json</itemPath>
       <itemPath>docker-compose.yml</itemPath>
       <itemPath>prepare.sh</itemPath>
     </logicalFolder>
@@ -49,7 +52,7 @@
       </toolsSet>
       <compileType>
         <ccTool>
-          <commandLine>-I libs/pistache/include $(shell pkg-config --cflags libfastjson)</commandLine>
+          <commandLine>-I libs/pistache/include $(shell pkg-config --cflags libfastjson) -I include</commandLine>
         </ccTool>
         <linkerTool>
           <linkerLibItems>
@@ -58,17 +61,9 @@
             <linkerOptionItem>`pkg-config --libs libfastjson`</linkerOptionItem>
             <linkerOptionItem>`pkg-config --libs libcurl`</linkerOptionItem>
           </linkerLibItems>
-          <commandLine>-lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient</commandLine>
+          <commandLine>-lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient -I include</commandLine>
         </linkerTool>
       </compileType>
-      <item path="DB.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="DB.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="base64.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="base64.h" ex="false" tool="3" flavor2="0">
-      </item>
       <folder path="ResourceFiles">
         <ccTool>
           <commandLine>-lpistache</commandLine>
@@ -94,7 +89,19 @@
           <output>${TESTDIR}/TestFiles/f1</output>
         </linkerTool>
       </folder>
-      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      <item path="include/Config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/DB.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/base64.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/Config.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/DB.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/base64.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="tests/base64Test.cpp" ex="false" tool="1" flavor2="0">
       </item>
@@ -119,14 +126,6 @@
           <developmentMode>5</developmentMode>
         </asmTool>
       </compileType>
-      <item path="DB.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="DB.h" ex="false" tool="3" flavor2="0">
-      </item>
-      <item path="base64.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="base64.h" ex="false" tool="3" flavor2="0">
-      </item>
       <folder path="TestFiles/f1">
         <cTool>
           <incDir>
@@ -142,7 +141,19 @@
           <output>${TESTDIR}/TestFiles/f1</output>
         </linkerTool>
       </folder>
-      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      <item path="include/Config.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/DB.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="include/base64.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="src/Config.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/DB.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/base64.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="src/main.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="tests/base64Test.cpp" ex="false" tool="1" flavor2="0">
       </item>

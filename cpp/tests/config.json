@@ -1,0 +1,7 @@
+{
+  "redisHost": "redis",
+  "host": "localhost",
+  "port": 8080,
+  "imagesDir": "images.full",
+  "imagesThumbDir": "images.thumb"
+}
