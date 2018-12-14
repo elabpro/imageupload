@@ -39,11 +39,11 @@ redisclient::RedisSyncClient DB::connect() {
 void DB::setCounter(int value) {
     redisclient::RedisSyncClient redis = this->connect();
     redisclient::RedisValue result;
-
-    result = redis.command("SET",{redisKey, std::to_string(value)});
+    const std::string v = std::to_string(value);
+    result = redis.command("SET",{redisKey, v});
 
     if (result.isError()) {
-        std::cerr << "SET error: " << result.toString() << "\n";
+        std::cout << "SET error: " << result.toString() << "\n";
     }
 }
 
@@ -53,7 +53,7 @@ int DB::getCounter() {
     result = redis.command("INCR",{redisKey});
 
     if (result.isOk()) {
-        return result.isInt();
+        return result.toInt();
     } else {
         std::cerr << "GET error: " << result.toString() << "\n";
         return -1;
@@ -66,9 +66,9 @@ int DB::getCurrentCounter() {
     result = redis.command("GET",{redisKey});
 
     if (result.isOk()) {
-        return result.isInt();
+        return atoi(result.toString().c_str());
     } else {
-        std::cerr << "GET error: " << result.toString() << "\n";
+        std::cout << "GET error: " << result.toString() << "\n";
         return -1;
     }
 }

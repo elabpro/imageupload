@@ -5,12 +5,14 @@
                    displayName="Исходные файлы"
                    projectFiles="true">
       <itemPath>DB.cpp</itemPath>
+      <itemPath>base64.cpp</itemPath>
       <itemPath>main.cpp</itemPath>
     </logicalFolder>
     <logicalFolder name="HeaderFiles"
                    displayName="Файлы заголовков"
                    projectFiles="true">
       <itemPath>DB.h</itemPath>
+      <itemPath>base64.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ResourceFiles"
                    displayName="Файлы ресурсов"
@@ -20,6 +22,12 @@
                    displayName="Файлы тестов"
                    projectFiles="false"
                    kind="TEST_LOGICAL_FOLDER">
+      <logicalFolder name="f1"
+                     displayName="base64Test"
+                     projectFiles="true"
+                     kind="TEST">
+        <itemPath>tests/base64Test.cpp</itemPath>
+      </logicalFolder>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Важные файлы"
@@ -46,6 +54,7 @@
             <linkerOptionItem>`pkg-config --libs libpistache`</linkerOptionItem>
             <linkerOptionItem>`pkg-config --libs pthread-stubs`</linkerOptionItem>
             <linkerOptionItem>`pkg-config --libs libfastjson`</linkerOptionItem>
+            <linkerOptionItem>`pkg-config --libs libcurl`</linkerOptionItem>
           </linkerLibItems>
           <commandLine>-lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient</commandLine>
         </linkerTool>
@@ -54,12 +63,38 @@
       </item>
       <item path="DB.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="base64.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="base64.h" ex="false" tool="3" flavor2="0">
+      </item>
       <folder path="ResourceFiles">
         <ccTool>
           <commandLine>-lpistache</commandLine>
         </ccTool>
       </folder>
+      <folder path="TestFiles">
+        <linkerTool>
+          <commandLine>-lboost_filesystem -lboost_system -lfastjson -lMPFDParser-1 -lRedisClient</commandLine>
+        </linkerTool>
+      </folder>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+        </linkerTool>
+      </folder>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/base64Test.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
     <conf name="Release" type="1">
@@ -86,7 +121,28 @@
       </item>
       <item path="DB.h" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="base64.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="base64.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <folder path="TestFiles/f1">
+        <cTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </cTool>
+        <ccTool>
+          <incDir>
+            <pElem>.</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <output>${TESTDIR}/TestFiles/f1</output>
+        </linkerTool>
+      </folder>
       <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="tests/base64Test.cpp" ex="false" tool="1" flavor2="0">
       </item>
     </conf>
   </confs>
