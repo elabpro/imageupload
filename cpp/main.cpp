@@ -82,9 +82,31 @@ private:
     void check() {
         int maxId = 0;
         for (auto & p : directory_iterator(imagesDir)) {
-            int id = atoi(p.path().string().substr(imagesDir.length() + 1).c_str());
-            if (id > maxId) {
-                maxId = id;
+            std::size_t found = p.path().string().find(".lock");
+            if (found != std::string::npos) {
+                string filename = p.path().string().substr(0, found);
+                cout << "Deleting lock for " << filename << endl;
+                std::remove(filename.c_str());
+                deleteLockForFile(filename);
+            } else {
+                int id = atoi(p.path().string().substr(imagesDir.length() + 1).c_str());
+                if (id > maxId) {
+                    maxId = id;
+                }
+            }
+        }
+        for (auto & p : directory_iterator(imagesThumbDir)) {
+            std::size_t found = p.path().string().find(".lock");
+            if (found != std::string::npos) {
+                string filename = p.path().string().substr(0, found);
+                int fileId = atoi(filename.substr(imagesDir.length() + 1).c_str());
+                cout << "Recreating thumb for " << filename << endl;
+                createThumb(fileId);
+            } else {
+                int id = atoi(p.path().string().substr(imagesDir.length() + 1).c_str());
+                if (id > maxId) {
+                    maxId = id;
+                }
             }
         }
         cout << "Setting counter to " << maxId << endl;
@@ -115,6 +137,8 @@ private:
      * @param response
      */
     void doPost(const Rest::Request& req, Http::ResponseWriter response) {
+        fjson_object *images = fjson_object_new_array();
+        std::string body = "";
         std::cout << "doPost" << endl;
         try {
             MPFD::Parser* POSTParser = new MPFD::Parser();
@@ -140,13 +164,15 @@ private:
                         cout << it->first << endl;
                         if (it->first.compare("url") == 0) {
                             string filename = fields[it->first]->GetTextTypeContent();
-                            downloadFile(filename);
+                            int fileId = downloadFile(filename);
+                            fjson_object_array_add(images, fjson_object_new_string(std::to_string(fileId).c_str()));
                         }
                     } else {
 #ifdef DEBUG_MODE
                         std::cout << "Got file field: [" << it->first << "] Filename:[" << fields[it->first]->GetFileName() << "] \n";
 #endif
-                        createImageFromFile(fields[it->first]->GetTempFileName());
+                        int fileId = createImageFromFile(fields[it->first]->GetTempFileName());
+                        fjson_object_array_add(images, fjson_object_new_string(std::to_string(fileId).c_str()));
                     }
                 }
             } else {
@@ -163,10 +189,12 @@ private:
                         string tagName = fjson_object_iter_peek_name(&it);
                         string tagValue = fjson_object_to_json_string(fjson_object_iter_peek_value(&it));
                         if (tagName.compare("url") == 0) {
-                            downloadFile(tagValue);
+                            int fileId = downloadFile(tagValue);
+                            fjson_object_array_add(images, fjson_object_new_string(std::to_string(fileId).c_str()));
                         }
                         if (tagName.compare("content") == 0) {
-                            createImageFromContent(tagValue);
+                            int fileId = createImageFromContent(tagValue);
+                            fjson_object_array_add(images, fjson_object_new_string(std::to_string(fileId).c_str()));
                         }
                         fjson_object_iter_next(&it);
                     }
@@ -175,7 +203,10 @@ private:
         } catch (MPFD::Exception ex) {
             cout << "Exception:" << ex.GetError() << endl;
         }
-        response.send(Http::Code::Ok);
+        if (images != NULL) {
+            body = fjson_object_to_json_string(images);
+        }
+        response.send(Http::Code::Ok, body);
     }
 
     /**
@@ -268,14 +299,15 @@ private:
     int createImageFromContent(const string & in) {
         base64* b64 = new base64();
         int l = in.length();
+        string content = in.substr(1, l - 2);
+        replaceAll(content, "\\/", "/");
 #ifdef DEBUG_MODE
-        cout << "Trying to save from base64:" << l << endl;
+        cout << "Trying to save from base64" << endl;
 #endif
         int fileId = db->getCounter();
         string filename = getFilename(fileId);
         createLockForFile(filename);
-        string out = b64->base64_decode(in.substr(1, l - 3));
-        cout << out.length() << endl;
+        string out = b64->base64_decode(content);
         writeToFile(filename, out);
         deleteLockForFile(filename);
         createThumb(fileId);

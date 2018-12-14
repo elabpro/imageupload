@@ -23,7 +23,7 @@ base64::~base64() {
 }
 
 inline bool base64::is_base64(unsigned char c) {
-    return (isalnum(c) || (c == '+') || (c == '/'));
+    return (isalnum(c) || (c == '+') || (c == '/') || c == '\n');
 }
 
 string base64::base64_encode(unsigned char const* bytes_to_encode, unsigned int in_len) {

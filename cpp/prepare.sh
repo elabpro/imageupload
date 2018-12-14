@@ -1,7 +1,7 @@
 #!/bin/sh
 PWD=$(pwd)
 
-sudo apt-get -y install libboost-all-dev
+sudo apt-get -y install libboost-all-dev libfastjson-dev libpthread-stubs0-dev libcurl4-gnutls-dev
 
 echo "Installing library to parse multipart requests"
 cd libs/MPFDParser-1.1.1
@@ -26,6 +26,7 @@ cd build
 cmake ..
 make
 sudo make install
+sudo cp ../src/redisclient/impl/*.cpp /usr/local/include/redisclient/impl/
 cd ../../..
 
 mkdir images.full images.thumb
