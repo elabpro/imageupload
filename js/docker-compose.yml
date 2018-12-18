@@ -19,7 +19,7 @@ services:
             - frontend
         volumes:
             - ./:/mnt
-#        command: ["sh","-c","unset http_proxy && cd /mnt/src && make docker"]
+        command: ["sh","-c","tail -F /dev/null"]
 
 networks:
   frontend:
