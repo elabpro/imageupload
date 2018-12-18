@@ -13,13 +13,13 @@ services:
         depends_on:
             - redis
         ports:
-            - 8080:8000
+            - 8080:8080
         networks:
             - backend
             - frontend
         volumes:
             - ./:/mnt
-#        command: ["sh","-c","unset http_proxy && cd /mnt/src && make docker"]
+        command: ["sh","-c","cd /mnt/python && python main.py"]
 
 networks:
   frontend:
