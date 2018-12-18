@@ -19,7 +19,7 @@ services:
             - frontend
         volumes:
             - ./:/mnt
-        command: ["sh","-c","tail -F /dev/null"]
+        command: ["sh","-c","cd /mnt && node main.js"]
 
 networks:
   frontend:
